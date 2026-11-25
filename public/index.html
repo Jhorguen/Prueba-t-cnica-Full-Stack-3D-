@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>Site Viewer Lite</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/addons/"
+      }
+    }
+  </script>
+  <script type="module" src="/js/main.js"></script>
+</head>
+<body>
+  <div class="app">
+    <div class="sidebar">
+      <section class="panel nav" aria-labelledby="app-title">
+        <h1 id="app-title" class="brand">Site Viewer Lite</h1>
+        <label class="label" for="user-select">Viewing as</label>
+        <select id="user-select" class="control">
+          <option value="">Choose a user…</option>
+        </select>
+
+        <h2 class="section-title">Projects</h2>
+        <div id="projects-status" aria-live="polite"></div>
+        <ul id="project-list" class="project-list"></ul>
+      </section>
+
+      <div class="details">
+        <section id="project-card" class="panel" aria-labelledby="project-name" hidden>
+          <p class="eyebrow" id="project-client"></p>
+          <h2 id="project-name" class="project-name"></h2>
+          <p id="project-address" class="muted"></p>
+          <p><span id="project-status" class="badge"></span></p>
+          <dl id="project-dates" class="facts"></dl>
+          <div id="project-contacts"></div>
+        </section>
+
+        <section id="issue-panel" class="panel" aria-labelledby="issue-title-heading" hidden>
+          <h2 id="issue-title-heading" class="section-title">Report an issue</h2>
+          <form id="issue-form" novalidate>
+            <div class="field">
+              <label class="label" for="issue-title">Title</label>
+              <input id="issue-title" name="title" class="control" type="text" autocomplete="off" aria-describedby="issue-title-count issue-title-error">
+              <div class="field-meta">
+                <span id="issue-title-error" class="field-error"></span>
+                <span id="issue-title-count" class="muted">0/120</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="issue-level">Level</label>
+              <select id="issue-level" name="level" class="control" aria-describedby="issue-level-error"></select>
+              <span id="issue-level-error" class="field-error"></span>
+            </div>
+            <div class="field">
+              <span class="label" id="issue-space-label">Space</span>
+              <div class="space-chip" aria-labelledby="issue-space-label">
+                <span id="issue-space">None. Tap a room in the 3D view to attach it.</span>
+                <button id="issue-space-clear" class="button button-quiet" type="button" hidden>Remove</button>
+              </div>
+              <span id="issue-space-error" class="field-error"></span>
+            </div>
+            <button id="issue-submit" class="button button-primary" type="submit">Submit issue</button>
+            <div id="issue-result" aria-live="polite"></div>
+          </form>
+        </section>
+      </div>
+    </div>
+
+    <main class="viewer">
+      <div class="toolbar">
+        <div id="level-filter" class="level-filter" role="group" aria-label="Show level"></div>
+        <div class="cloud-controls">
+          <button id="cloud-load" class="button button-primary" type="button" disabled>Load point cloud</button>
+          <button id="cloud-toggle" class="button" type="button" aria-pressed="true" hidden>Hide point cloud</button>
+          <div id="cloud-progress" class="cloud-progress" hidden>
+            <progress id="cloud-progress-bar" max="1" value="0" aria-label="Point cloud download"></progress>
+            <span id="cloud-progress-text" class="muted" aria-live="polite"></span>
+            <button id="cloud-cancel" class="button" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div id="cloud-status" class="cloud-status"></div>
+
+      <div id="stage" class="stage">
+        <div id="stage-message" class="stage-message">Choose a user, then a project, to see its spaces in 3D.</div>
+        <aside id="inspector" class="inspector" aria-labelledby="inspector-name" hidden>
+          <div class="inspector-head">
+            <h2 id="inspector-name" class="inspector-name"></h2>
+            <button id="inspector-close" class="button button-quiet" type="button" aria-label="Close space details">Close</button>
+          </div>
+          <dl class="facts">
+            <dt>Use</dt><dd id="inspector-use"></dd>
+            <dt>Level</dt><dd id="inspector-level"></dd>
+            <dt>Area</dt><dd id="inspector-area"></dd>
+          </dl>
+          <button id="unit-toggle" class="button" type="button">Show in ft²</button>
+        </aside>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
