@@ -57,7 +57,10 @@ export function loadPointCloud({ url, token, maxPoints, signal, onProgress }) {
       event.preventDefault();
       if (settled) return;
       settle();
-      reject(new CloudLoadError('worker', 'The point cloud reader stopped unexpectedly.'));
+      const message = navigator.onLine === false
+        ? 'You appear to be offline. Check your connection.'
+        : 'The point cloud reader could not start. Check your connection.';
+      reject(new CloudLoadError('worker', message));
     };
     worker.addEventListener('error', onWorkerFailure);
     worker.addEventListener('messageerror', onWorkerFailure);

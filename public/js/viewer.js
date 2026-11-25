@@ -6,7 +6,7 @@ export const LEVEL_COLORS = ['#4e79a7', '#f28e2b', '#59a14f', '#e15759', '#b07aa
 const TAP_MAX_MOVE_PX = 8;
 const TAP_MAX_MS = 600;
 const LEVEL_MARGIN_M = 0.05;
-const POINT_SIZE_M = 0.035;
+const POINT_SIZE_M = 0.02;
 
 const OPACITY = {
   idle: 0.28,
