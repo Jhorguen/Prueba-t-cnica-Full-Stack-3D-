@@ -6,7 +6,7 @@ API en Node.js y visor web con three.js para revisar edificios escaneados. Cada 
 ![Node.js 18+](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)
 ![Express 5](https://img.shields.io/badge/express-5-000000?logo=express&logoColor=white)
 ![three.js](https://img.shields.io/badge/three.js-r187-000000?logo=three.js&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-78%20%2B%2018%20en%20navegador-2ea44f)
+![Pruebas](https://img.shields.io/badge/pruebas-78%20%2B%2019%20en%20navegador-2ea44f)
 
 ![Visor con la nube de 2 millones de puntos cargada y el panel de un espacio](docs/images/visor.jpg)
 
@@ -84,7 +84,7 @@ Abre **<http://localhost:3000>** en el navegador y elige un usuario en **Viewing
 | `npm run quickstart` | Instala, genera las nubes y arranca. Para la primera vez |
 | `npm start` | Arranca sin reinstalar. Genera las nubes solo si faltan |
 | `npm test` | Corre las 78 pruebas de la API y del visor |
-| `npm run test:e2e` | Corre las 18 pruebas en navegador (necesita Chrome) |
+| `npm run test:e2e` | Corre las 19 pruebas en navegador (necesita Chrome) |
 | `npm run clouds:truncate` | Reemplaza la nube de *410 Harbor Ave* por una cortada al 60 %, para ver el error de archivo incompleto |
 | `npm run clouds` | Vuelve a generar las nubes completas |
 
@@ -175,6 +175,15 @@ Ninguno lo pide el enunciado. Están probados igual que el resto.
 - Al cambiar de idioma se redibuja todo lo que hay en pantalla sin perder el proyecto abierto ni la nube cargada.
 - Fechas y números usan el formato regional: "4 de ago de 2026", "322,9 ft²", "2.000.000 puntos".
 - Los niveles, usos y estados del kit se traducen solo en pantalla ("Level 2" se ve como "Nivel 2"); a la API se sigue enviando el valor original.
+
+### App instalable (PWA)
+
+- Se puede agregar a la pantalla de inicio y se abre a pantalla completa, sin la barra del navegador:
+  - **iPad o iPhone:** en Safari, botón Compartir y luego **Agregar a pantalla de inicio**.
+  - **Android o computador:** en Chrome o Edge, el ícono de instalar en la barra de direcciones.
+- Después de la primera visita, la interfaz abre aunque no haya señal; sin conexión, la app lo dice con "Try again" en lugar de quedarse en blanco.
+- El service worker ([`public/sw.js`](public/sw.js)) pide siempre primero al servidor y solo usa su copia sin conexión, así que con red nunca muestra una versión vieja.
+- Nunca guarda respuestas de la API ni nubes de puntos: son datos de cada usuario y no deben quedar en el dispositivo.
 
 ### Estilo visual
 
@@ -293,9 +302,9 @@ npm test
 npm run test:e2e
 ```
 
-18 pruebas que abren el visor en Chrome sin ventana, con pantalla táctil y tamaño de iPad. Usan el Chrome instalado, sin descargar navegadores; con Edge: `E2E_BROWSER_CHANNEL=msedge npm run test:e2e`.
+19 pruebas que abren el visor en Chrome sin ventana, con pantalla táctil y tamaño de iPad. Usan el Chrome instalado, sin descargar navegadores; con Edge: `E2E_BROWSER_CHANNEL=msedge npm run test:e2e`.
 
-Entre el navegador y la app ponen un proxy que entrega la nube lentamente y registra si la conexión se cortó. Así comprueban que **Cancel** y cambiar de proyecto cortan la descarga de verdad en el servidor, no solo en pantalla. También cubren selección táctil, filtro de nivel, progreso, los tres errores con "Try again", el formulario, el panel de reportes, el cambio de idioma, las medidas de iPad en los dos idiomas y que no haya excepciones en consola.
+Entre el navegador y la app ponen un proxy que entrega la nube lentamente y registra si la conexión se cortó. Así comprueban que **Cancel** y cambiar de proyecto cortan la descarga de verdad en el servidor, no solo en pantalla. También cubren selección táctil, filtro de nivel, progreso, los tres errores con "Try again", el formulario, el panel de reportes, el cambio de idioma, la PWA (instalable, sin datos de la API guardados y con apertura sin conexión), las medidas de iPad en los dos idiomas y que no haya excepciones en consola.
 
 ## Decisiones
 
@@ -347,6 +356,8 @@ src/                          servidor (API)
 
 public/                       visor web, sin paso de build
   index.html, css/styles.css
+  manifest.webmanifest, sw.js  app instalable y apertura sin conexión
+  icons/                      íconos de la app instalada
   js/
     main.js                   estado de la página y flujo: usuario, proyecto, nube
     api/client.js             llamadas a la API con errores tipados
