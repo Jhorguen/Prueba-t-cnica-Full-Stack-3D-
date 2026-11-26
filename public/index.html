@@ -4,8 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light">
+  <meta name="description" content="Review a scanned building: project details, its spaces in 3D, the point cloud and issue reports.">
   <title>Site Viewer Lite</title>
   <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/vendor/fonts/inter-tight/latin-400.css">
+  <link rel="stylesheet" href="/vendor/fonts/inter-tight/latin-600.css">
+  <link rel="stylesheet" href="/vendor/fonts/michroma/latin-400.css">
   <link rel="stylesheet" href="/css/styles.css">
   <script type="importmap">
     {
@@ -18,49 +22,60 @@
   <script type="module" src="/js/main.js"></script>
 </head>
 <body>
+  <div class="intro" aria-hidden="true">
+    <span class="intro-wordmark">Site Viewer Lite</span>
+  </div>
   <div class="app">
-    <div class="sidebar">
-      <section class="panel nav" aria-labelledby="app-title">
-        <h1 id="app-title" class="brand">Site Viewer Lite</h1>
-        <label class="label" for="user-select">Viewing as</label>
-        <select id="user-select" class="control">
-          <option value="">Choose a user…</option>
-        </select>
+    <header class="topbar">
+      <h1 class="wordmark">Site Viewer Lite</h1>
+      <div class="topbar-controls">
+        <div class="language-switch" role="group" aria-label="Language" data-i18n-label="topbar.language">
+          <button type="button" class="button language-option" data-language="en" lang="en" aria-label="English" aria-pressed="true">EN</button>
+          <button type="button" class="button language-option" data-language="es" lang="es" aria-label="Español" aria-pressed="false">ES</button>
+        </div>
+        <div class="identity">
+          <label class="topbar-label" for="user-select" data-i18n="topbar.viewingAs">Viewing as</label>
+          <select id="user-select" class="control control-night">
+            <option value="" data-i18n="topbar.chooseUser">Choose a user…</option>
+          </select>
+        </div>
+      </div>
+    </header>
 
-        <h2 class="section-title">Projects</h2>
+    <div class="sidebar">
+      <section class="section nav" aria-labelledby="projects-title">
+        <h2 id="projects-title" class="section-title" data-i18n="projects.title">Projects</h2>
         <div id="projects-status" aria-live="polite"></div>
         <ul id="project-list" class="project-list"></ul>
       </section>
 
       <div class="details">
-        <section id="project-card" class="panel" aria-labelledby="project-name" hidden>
-          <p class="eyebrow" id="project-client"></p>
+        <section id="project-card" class="section" aria-labelledby="project-name" hidden>
           <h2 id="project-name" class="project-name"></h2>
           <p id="project-address" class="muted"></p>
-          <p><span id="project-status" class="badge"></span></p>
           <dl id="project-dates" class="facts"></dl>
-          <div id="project-contacts"></div>
+          <div id="project-contacts" class="contacts"></div>
         </section>
 
-        <section id="issue-panel" class="panel" aria-labelledby="issue-title-heading" hidden>
-          <h2 id="issue-title-heading" class="section-title">Report an issue</h2>
-          <form id="issue-form" novalidate>
+        <section id="issue-panel" class="section" aria-labelledby="issue-title-heading" hidden>
+          <h2 id="issue-title-heading" class="section-title" data-i18n="issue.heading">Report an issue</h2>
+          <form id="issue-form" class="form" novalidate>
             <div class="field">
-              <label class="label" for="issue-title">Title</label>
+              <label class="label" for="issue-title" data-i18n="issue.title">Title</label>
               <input id="issue-title" name="title" class="control" type="text" autocomplete="off" aria-describedby="issue-title-count issue-title-error">
               <div class="field-meta">
                 <span id="issue-title-error" class="field-error"></span>
-                <span id="issue-title-count" class="muted">0/120</span>
+                <span id="issue-title-count" class="muted counter">0/120</span>
               </div>
             </div>
             <div class="field">
-              <label class="label" for="issue-level">Level</label>
+              <label class="label" for="issue-level" data-i18n="issue.level">Level</label>
               <select id="issue-level" name="level" class="control" aria-describedby="issue-level-error"></select>
               <span id="issue-level-error" class="field-error"></span>
             </div>
             <div class="field">
-              <span class="label" id="issue-space-label">Space</span>
-              <div class="space-chip" aria-labelledby="issue-space-label">
+              <span class="label" id="issue-space-label" data-i18n="issue.space">Space</span>
+              <div class="space-slot" aria-labelledby="issue-space-label">
                 <span id="issue-space">None. Tap a room in the 3D view to attach it.</span>
                 <button id="issue-space-clear" class="button button-quiet" type="button" hidden>Remove</button>
               </div>
@@ -75,13 +90,13 @@
 
     <main class="viewer">
       <div class="toolbar">
-        <div id="level-filter" class="level-filter" role="group" aria-label="Show level"></div>
+        <div id="level-filter" class="level-filter" role="group" aria-label="Show level" data-i18n-label="levels.groupLabel"></div>
         <div class="cloud-controls">
           <button id="cloud-load" class="button button-primary" type="button" disabled>Load point cloud</button>
           <button id="cloud-toggle" class="button" type="button" aria-pressed="true" hidden>Hide point cloud</button>
           <div id="cloud-progress" class="cloud-progress" hidden>
             <progress id="cloud-progress-bar" max="1" value="0" aria-label="Point cloud download"></progress>
-            <span id="cloud-progress-text" class="muted" aria-live="polite"></span>
+            <span id="cloud-progress-text" class="progress-text" aria-live="polite"></span>
             <button id="cloud-cancel" class="button" type="button">Cancel</button>
           </div>
         </div>
@@ -93,12 +108,12 @@
         <aside id="inspector" class="inspector" aria-labelledby="inspector-name" hidden>
           <div class="inspector-head">
             <h2 id="inspector-name" class="inspector-name"></h2>
-            <button id="inspector-close" class="button button-quiet" type="button" aria-label="Close space details">Close</button>
+            <button id="inspector-close" class="button button-quiet" type="button" aria-label="Close space details" data-i18n="inspector.close" data-i18n-label="inspector.closeLabel">Close</button>
           </div>
           <dl class="facts">
-            <dt>Use</dt><dd id="inspector-use"></dd>
-            <dt>Level</dt><dd id="inspector-level"></dd>
-            <dt>Area</dt><dd id="inspector-area"></dd>
+            <dt data-i18n="inspector.use">Use</dt><dd id="inspector-use"></dd>
+            <dt data-i18n="inspector.level">Level</dt><dd id="inspector-level"></dd>
+            <dt data-i18n="inspector.area">Area</dt><dd id="inspector-area" class="figure"></dd>
           </dl>
           <button id="unit-toggle" class="button" type="button">Show in ft²</button>
         </aside>

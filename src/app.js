@@ -10,6 +10,8 @@ const { projectsRouter } = require('./routes/projects');
 
 const ROOT = path.join(__dirname, '..');
 const THREE_DIR = path.join(path.dirname(require.resolve('three')), '..');
+const FONT_PACKAGES = ['inter-tight', 'michroma'];
+const fontDir = (name) => path.dirname(require.resolve(`@fontsource/${name}/package.json`));
 
 function securityHeaders(req, res, next) {
   res.set({
@@ -41,6 +43,7 @@ function createApp({ dataDir = path.join(ROOT, 'data'), logger = console } = {})
 
   app.use('/vendor/three/build', express.static(path.join(THREE_DIR, 'build')));
   app.use('/vendor/three/addons', express.static(path.join(THREE_DIR, 'examples', 'jsm')));
+  for (const name of FONT_PACKAGES) app.use(`/vendor/fonts/${name}`, express.static(fontDir(name)));
   app.use(express.static(path.join(ROOT, 'public')));
 
   app.use(errorHandler(logger));
