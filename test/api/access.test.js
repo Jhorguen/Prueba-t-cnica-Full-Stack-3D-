@@ -2,7 +2,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { startServer } = require('./helpers');
+const { startServer } = require('../helpers');
 
 const MISSING_ID = '9999-99999';
 const COMPARED_HEADERS = ['content-type', 'content-length', 'cache-control', 'etag', 'www-authenticate'];

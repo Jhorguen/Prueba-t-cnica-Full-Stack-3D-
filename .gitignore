@@ -5,3 +5,4 @@ data/clouds/
 .env
 .claude/
 CLAUDE.md
+data/issues.jsonl

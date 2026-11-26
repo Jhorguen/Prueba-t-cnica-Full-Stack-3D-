@@ -2,7 +2,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { startServer, isClientError } = require('./helpers');
+const { startServer, isClientError } = require('../helpers');
 
 const ISSUES = '/api/projects/1201-30001/issues';
 

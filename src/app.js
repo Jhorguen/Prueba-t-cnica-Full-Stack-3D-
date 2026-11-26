@@ -2,10 +2,10 @@
 
 const path = require('path');
 const express = require('express');
-const { loadData } = require('./data');
-const { authenticate } = require('./auth');
-const { HttpError, errorHandler } = require('./errors');
-const { createIssueStore } = require('./issues');
+const { loadData } = require('./storage/data');
+const { authenticate } = require('./middleware/auth');
+const { HttpError, errorHandler } = require('./middleware/errors');
+const { createIssueStore } = require('./storage/issues');
 const { projectsRouter } = require('./routes/projects');
 
 const ROOT = path.join(__dirname, '..');
@@ -22,7 +22,7 @@ function securityHeaders(req, res, next) {
 
 function createApp({ dataDir = path.join(ROOT, 'data'), logger = console } = {}) {
   const data = loadData(dataDir);
-  const issues = createIssueStore();
+  const issues = createIssueStore({ file: path.join(dataDir, 'issues.jsonl') });
   const app = express();
 
   app.disable('x-powered-by');

@@ -1,6 +1,6 @@
 'use strict';
 
-const { isStaff } = require('./auth');
+const { isStaff } = require('./access');
 
 const DATE_FIELDS = ['signed', 'scan', 'estimatedDelivery', 'delivered'];
 

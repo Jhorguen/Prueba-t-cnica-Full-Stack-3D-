@@ -2,7 +2,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { startServer, makeCloud } = require('./helpers');
+const { startServer, makeCloud } = require('../helpers');
 
 const CLOUD = '/api/projects/1201-30001/cloud';
 const FIXTURE = makeCloud(4);

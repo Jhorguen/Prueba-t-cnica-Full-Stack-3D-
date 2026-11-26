@@ -1,16 +1,15 @@
 'use strict';
 
 const crypto = require('crypto');
+const fs = require('fs');
 
-function createIssueStore() {
-  const issues = [];
+function createIssueStore({ file }) {
   return {
-    create(fields) {
+    async create(fields) {
       const issue = { ...fields, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-      issues.push(issue);
+      await fs.promises.appendFile(file, `${JSON.stringify(issue)}\n`, 'utf8');
       return issue;
     },
-    list: () => [...issues],
   };
 }
 

@@ -1,7 +1,10 @@
 'use strict';
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 function readJson(file) {
   try {
@@ -25,12 +28,12 @@ function loadData(dataDir) {
   if (!Array.isArray(users)) throw new Error('users.json must contain an array');
   if (!Array.isArray(projects)) throw new Error('projects.json must contain an array');
 
-  const usersByToken = new Map();
+  const usersByTokenHash = new Map();
   for (const user of users) {
     if (typeof user.token !== 'string' || user.token.length === 0) {
       throw new Error('Every user needs a non-empty token');
     }
-    usersByToken.set(user.token, user);
+    usersByTokenHash.set(hashToken(user.token), user);
   }
 
   const projectsById = new Map();
@@ -41,7 +44,7 @@ function loadData(dataDir) {
   }
 
   return {
-    findUserByToken: (token) => usersByToken.get(token) || null,
+    findUserByToken: (token) => usersByTokenHash.get(hashToken(token)) || null,
     listProjects: () => projects,
     findProject: (id) => projectsById.get(id) || null,
     listSpaces: (projectId) => spacesByProject.get(projectId) || [],

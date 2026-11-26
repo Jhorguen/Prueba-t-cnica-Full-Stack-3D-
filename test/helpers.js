@@ -72,7 +72,7 @@ async function startServer() {
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
 
-  return { request, postJson, close, loggedErrors };
+  return { request, postJson, close, loggedErrors, dataDir, base };
 }
 
 function isClientError(status) {

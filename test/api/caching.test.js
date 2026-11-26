@@ -2,7 +2,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { startServer } = require('./helpers');
+const { startServer } = require('../helpers');
 
 const DETAIL = '/api/projects/1201-30001';
 

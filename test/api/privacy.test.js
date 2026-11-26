@@ -2,7 +2,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { startServer, PROJECTS } = require('./helpers');
+const { startServer, PROJECTS } = require('../helpers');
 
 const FORBIDDEN_KEYS = ['internal', 'price', 'invoice', 'margin', 'notes'];
 
