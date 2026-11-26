@@ -11,11 +11,15 @@
     "prestart": "node scripts/clouds.js",
     "start": "node src/server.js",
     "test": "node --test",
+    "test:e2e": "node --test e2e/viewer.e2e.js",
     "clouds": "node scripts/clouds.js --force",
     "clouds:truncate": "node scripts/clouds.js --truncate"
   },
   "dependencies": {
     "express": "^5.3.0",
     "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.1"
   }
 }
