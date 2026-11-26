@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-export const LEVEL_COLORS = ['#4e79a7', '#f28e2b', '#59a14f', '#e15759', '#b07aa1', '#edc948', '#76b7b2'];
-
+const NEUTRAL = new THREE.Color(0x8a8fa3);
 const TAP_MAX_MOVE_PX = 8;
 const TAP_MAX_MS = 600;
 const LEVEL_MARGIN_M = 0.05;
 const POINT_SIZE_M = 0.02;
+const PREVIEW_MIN_POINTS = 600000;
 
 const OPACITY = {
   idle: 0.28,
@@ -16,8 +16,9 @@ const OPACITY = {
 };
 
 export class SiteViewer {
-  constructor(container, { onSelect, onContextChange }) {
+  constructor(container, { palette = [], background, onSelect, onContextChange }) {
     this.container = container;
+    this.palette = palette;
     this.onSelect = onSelect;
     this.onContextChange = onContextChange;
     this.levelColors = new Map();
@@ -29,6 +30,9 @@ export class SiteViewer {
     this.renderQueued = false;
     this.pointers = new Map();
     this.multiTouchGesture = false;
+    this.interacting = false;
+    this.usePreview = false;
+    this.previewCount = 0;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -38,7 +42,7 @@ export class SiteViewer {
     container.append(this.canvas);
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#1d2129');
+    this.scene.background = background ? new THREE.Color(background) : new THREE.Color(0x07080d);
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x404858, 2.2));
     const sun = new THREE.DirectionalLight(0xffffff, 1.4);
     sun.position.set(30, 60, 20);
@@ -53,9 +57,17 @@ export class SiteViewer {
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 5000);
     this.camera.position.set(30, 25, 30);
     this.controls = new OrbitControls(this.camera, this.canvas);
-    this.controls.enableDamping = true;
+    this.controls.enableDamping = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.controls.screenSpacePanning = true;
     this.controls.addEventListener('change', () => this.requestRender());
+    this.controls.addEventListener('start', () => {
+      this.interacting = true;
+      this.requestRender();
+    });
+    this.controls.addEventListener('end', () => {
+      this.interacting = false;
+      this.requestRender();
+    });
 
     this.raycaster = new THREE.Raycaster();
     this.clipBelow = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -95,18 +107,28 @@ export class SiteViewer {
     this.renderQueued = true;
     requestAnimationFrame(() => {
       this.renderQueued = false;
-      this.controls.update();
+      const moving = this.controls.update();
+      this.applyDrawRange(this.interacting || moving);
       this.renderer.render(this.scene, this.camera);
     });
   }
 
+  applyDrawRange(reduced) {
+    if (!this.points) return;
+    const count = reduced && this.usePreview ? this.previewCount : Infinity;
+    this.points.geometry.setDrawRange(0, count);
+  }
+
   setSpaces(spaces, levels) {
     this.clearSpaces();
-    this.levelColors = new Map(levels.map((level, i) => [level, LEVEL_COLORS[i % LEVEL_COLORS.length]]));
+    this.levelColors = new Map(levels.map((level, i) => [
+      level,
+      this.palette.length ? new THREE.Color(this.palette[i % this.palette.length]) : NEUTRAL,
+    ]));
     this.levelRanges = new Map();
 
     for (const space of spaces) {
-      const color = new THREE.Color(this.colorForLevel(space.level));
+      const color = this.colorForLevel(space.level).clone();
       const geometry = new THREE.BoxGeometry(space.w, space.d, space.h);
       const material = new THREE.MeshLambertMaterial({
         color,
@@ -142,7 +164,7 @@ export class SiteViewer {
   }
 
   colorForLevel(level) {
-    return this.levelColors.get(level) || LEVEL_COLORS[LEVEL_COLORS.length - 1];
+    return this.levelColors.get(level) || NEUTRAL;
   }
 
   clearSpaces() {
@@ -221,14 +243,16 @@ export class SiteViewer {
       mesh.material.emissive.set(selected ? '#ffffff' : '#000000');
       mesh.material.emissiveIntensity = selected ? 0.25 : 0;
       mesh.userData.edges.material.color.set(
-        selected ? '#ffffff' : new THREE.Color(this.colorForLevel(mesh.userData.space.level)).lerp(new THREE.Color('#ffffff'), 0.35),
+        selected ? '#ffffff' : this.colorForLevel(mesh.userData.space.level).clone().lerp(new THREE.Color('#ffffff'), 0.35),
       );
     }
     this.requestRender();
   }
 
-  setPointCloud({ positions, colors }) {
+  setPointCloud({ positions, colors, count, previewCount }) {
     this.clearPointCloud();
+    this.usePreview = count >= PREVIEW_MIN_POINTS && previewCount > 0;
+    this.previewCount = previewCount;
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
