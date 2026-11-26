@@ -1,4 +1,4 @@
-import { createPtsParser, PtsError } from './pts.mjs';
+import { createPtsParser, PtsError } from './pts.js';
 
 const PROGRESS_INTERVAL_MS = 50;
 

@@ -2,10 +2,10 @@
 
 const { test, before } = require('node:test');
 const assert = require('node:assert/strict');
-const { makeCloud } = require('./helpers');
+const { makeCloud } = require('../helpers');
 
 let pts;
-before(async () => { pts = await import('../public/js/pts.mjs'); });
+before(async () => { pts = await import('../../public/js/cloud/pts.js'); });
 
 const toBytes = (buf) => new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
 

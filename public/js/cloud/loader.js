@@ -18,7 +18,7 @@ export function loadPointCloud({ url, token, maxPoints, signal, onProgress }) {
 
     let worker;
     try {
-      worker = new Worker(new URL('./cloud-worker.js', import.meta.url), { type: 'module' });
+      worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
     } catch {
       reject(new CloudLoadError('worker', 'This browser could not start the point cloud reader.'));
       return;
