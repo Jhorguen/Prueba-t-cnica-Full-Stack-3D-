@@ -112,7 +112,7 @@ Los errores siempre son JSON: `{ "error": { "code", "message", "details?" } }`.
 - La elección se guarda en el navegador. No se detecta el idioma del sistema, para que un navegador en español siga viendo la página en inglés por defecto.
 - Al cambiar de idioma se redibuja todo lo que está en pantalla (ficha, filtro, panel del espacio, avisos y errores) sin perder el proyecto abierto ni la nube cargada.
 - Fechas y números usan el formato regional: "4 de ago de 2026", "322,9 ft²", "2.000.000 puntos".
-- Los datos del kit (nombres de niveles, usos de los espacios, direcciones) se muestran tal como vienen. Solo los estados conocidos del proyecto tienen traducción.
+- Los niveles, los usos de los espacios y los estados del proyecto que vienen en el kit se traducen solo en pantalla: "Level 2" se ve como "Nivel 2", "Roof" como "Azotea" y "Office" como "Oficina". Al servidor se sigue enviando el valor original ("Roof"), porque la API valida que el nivel exista tal como está en el proyecto. Los nombres de espacios, proyectos y direcciones se muestran tal cual, y un valor sin traducción conocida también.
 
 **Rendimiento y reducción de puntos.** En local, la nube de 2 millones de puntos descarga e interpreta en menos de un segundo.
 

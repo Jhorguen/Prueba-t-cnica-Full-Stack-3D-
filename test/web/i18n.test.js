@@ -18,7 +18,7 @@ before(async () => {
 after(() => i18n.setLanguage('en'));
 
 const placeholders = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
-const isDataTranslation = (key) => key.startsWith('status.');
+const isDataTranslation = (key) => key.startsWith('data.');
 
 test('English is the default language', () => {
   assert.equal(i18n.language(), 'en');
@@ -66,6 +66,20 @@ test('switching to Spanish translates texts, dates and numbers', () => {
   stop();
   i18n.setLanguage('en');
   assert.equal(i18n.translateValue('status', 'In production'), 'In production');
+});
+
+test('level names and space uses from the data are shown in the active language', () => {
+  assert.equal(i18n.translateLevel('Level 2'), 'Level 2');
+  assert.equal(i18n.translateLevel('Roof'), 'Roof');
+  i18n.setLanguage('es');
+  assert.equal(i18n.translateLevel('Level 1'), 'Nivel 1');
+  assert.equal(i18n.translateLevel('Level 12'), 'Nivel 12');
+  assert.equal(i18n.translateLevel('Ground'), 'Planta baja');
+  assert.equal(i18n.translateLevel('Roof'), 'Azotea');
+  assert.equal(i18n.translateLevel('Mezzanine'), 'Mezzanine');
+  assert.equal(i18n.translateValue('use', 'Office'), 'Oficina');
+  assert.equal(i18n.translateValue('use', 'Laboratory'), 'Laboratory');
+  i18n.setLanguage('en');
 });
 
 test('an unknown language is ignored', () => {

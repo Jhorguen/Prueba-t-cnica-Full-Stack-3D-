@@ -43,7 +43,14 @@ export function hasKey(key) {
 }
 
 export function translateValue(prefix, value) {
-  return DICTIONARIES[current][`${prefix}.${value}`] ?? value;
+  return DICTIONARIES[current][`data.${prefix}.${value}`] ?? value;
+}
+
+export function translateLevel(level) {
+  const named = DICTIONARIES[current][`data.level.${level}`];
+  if (named) return named;
+  const numbered = /^Level (\d+)$/.exec(level);
+  return numbered ? t('level.numbered', { number: numbered[1] }) : level;
 }
 
 export function setLanguage(next) {

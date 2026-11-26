@@ -99,4 +99,6 @@ export default {
   'api.route_not_found': 'That endpoint does not exist.',
   'api.internal_error': 'Something went wrong on our side.',
   'api.generic': 'The request failed.',
+
+  'level.numbered': 'Level {number}',
 };

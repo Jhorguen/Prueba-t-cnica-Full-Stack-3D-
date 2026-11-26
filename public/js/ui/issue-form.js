@@ -1,5 +1,5 @@
 import { ApiError, NetworkError, isAbort } from '../api/client.js';
-import { t } from '../i18n/index.js';
+import { t, translateLevel } from '../i18n/index.js';
 import { el, notice, show } from './dom.js';
 import { characterCount } from './format.js';
 import { describeError, describeFieldError } from './messages.js';
@@ -64,15 +64,17 @@ export function createIssueForm(elements, { send, onClearSpace }) {
   }
 
   function renderSpace() {
-    elements.space.textContent = space ? `${space.name} (${space.level})` : t('issue.noSpace');
+    elements.space.textContent = space ? `${space.name} (${translateLevel(space.level)})` : t('issue.noSpace');
     elements.spaceClear.textContent = t('issue.removeSpace');
     show(elements.spaceClear, Boolean(space));
     elements.level.disabled = Boolean(space);
     if (space) elements.level.value = space.level;
   }
 
-  function renderLevelPlaceholder() {
-    if (elements.level.options[0]) elements.level.options[0].textContent = t('issue.chooseLevel');
+  function renderLevelOptions() {
+    for (const option of elements.level.options) {
+      option.textContent = option.value ? translateLevel(option.value) : t('issue.chooseLevel');
+    }
   }
 
   async function submit(event) {
@@ -121,7 +123,7 @@ export function createIssueForm(elements, { send, onClearSpace }) {
       generation++;
       elements.level.replaceChildren(
         el('option', { value: '', text: t('issue.chooseLevel') }),
-        ...levels.map((level) => el('option', { value: level, text: level })),
+        ...levels.map((level) => el('option', { value: level, text: translateLevel(level) })),
       );
       elements.level.value = levels.length === 1 ? levels[0] : '';
       elements.title.value = '';
@@ -149,7 +151,7 @@ export function createIssueForm(elements, { send, onClearSpace }) {
     relabel() {
       renderSubmit();
       renderSpace();
-      renderLevelPlaceholder();
+      renderLevelOptions();
       renderErrors();
       renderResult();
     },

@@ -1,4 +1,4 @@
-import { t } from '../i18n/index.js';
+import { t, translateLevel, translateValue } from '../i18n/index.js';
 import { show } from './dom.js';
 import { floorArea, formatArea } from './format.js';
 
@@ -10,8 +10,8 @@ export function createInspector(elements, { onClose }) {
     show(elements.panel, Boolean(space));
     if (!space) return;
     elements.name.textContent = space.name;
-    elements.use.textContent = space.use || t('date.notRecorded');
-    elements.level.textContent = space.level;
+    elements.use.textContent = space.use ? translateValue('use', space.use) : t('date.notRecorded');
+    elements.level.textContent = translateLevel(space.level);
     elements.area.textContent = formatArea(floorArea(space), unit);
     elements.unitToggle.textContent = t(unit === 'm2' ? 'inspector.showFeet' : 'inspector.showMetres');
   }

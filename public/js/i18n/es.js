@@ -100,7 +100,19 @@ export default {
   'api.internal_error': 'Algo falló de nuestro lado.',
   'api.generic': 'La solicitud falló.',
 
-  'status.In production': 'En producción',
-  'status.Delivered': 'Entregado',
-  'status.Scheduled': 'Programado',
+  'level.numbered': 'Nivel {number}',
+
+  'data.status.In production': 'En producción',
+  'data.status.Delivered': 'Entregado',
+  'data.status.Scheduled': 'Programado',
+  'data.level.Ground': 'Planta baja',
+  'data.level.Roof': 'Azotea',
+  'data.use.Residential': 'Residencial',
+  'data.use.Amenity': 'Zona común',
+  'data.use.Circulation': 'Circulación',
+  'data.use.Office': 'Oficina',
+  'data.use.Kitchen': 'Cocina',
+  'data.use.Storage': 'Almacenamiento',
+  'data.use.Meeting': 'Reuniones',
+  'data.use.Industrial': 'Industrial',
 };

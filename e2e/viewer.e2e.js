@@ -264,6 +264,15 @@ e2e('switching to Spanish translates what is on screen and is remembered', async
   assert.equal(await page.locator('#cloud-load').textContent(), 'Cargar nube de puntos');
   await page.selectOption('#user-select', 'brick-token');
   await openProject('Brickyard Lofts');
+  const chips = await page.locator('.level-chip').allTextContents();
+  assert.deepEqual(chips.map((text) => text.trim()), ['Todos los niveles', 'Nivel 1', 'Nivel 2', 'Azotea']);
+  const options = await page.locator('#issue-level option').evaluateAll((nodes) => nodes.map((n) => [n.value, n.textContent]));
+  assert.deepEqual(options, [['', 'Elige un nivel…'], ['Level 1', 'Nivel 1'], ['Level 2', 'Nivel 2'], ['Roof', 'Azotea']]);
+  await page.locator('#issue-title').fill('Membrana rota en la azotea');
+  await page.selectOption('#issue-level', { label: 'Azotea' });
+  await page.locator('#issue-submit').click();
+  await page.locator('#issue-result .notice-ok').waitFor();
+  assert.match(await page.locator('#issue-result').textContent(), /Problema reportado\. ID: [0-9a-f-]{36}/);
   await page.locator('#cloud-load').click();
   await cloudNotice('error').waitFor({ timeout: 10000 });
 });
