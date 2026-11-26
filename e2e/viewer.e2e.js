@@ -342,6 +342,41 @@ e2e('staff sees reports arrive, changes their status and opens them in 3D', asyn
   assert.equal(await page.locator('.view-tab[data-view="viewer"]').getAttribute('aria-pressed'), 'true');
 });
 
+e2e('the app installs as a PWA, never caches API data and opens without a connection', async () => {
+  const manifestResponse = await fetch(`${proxy.url}/manifest.webmanifest`);
+  assert.match(manifestResponse.headers.get('content-type'), /manifest\+json/);
+  const manifest = await manifestResponse.json();
+  assert.equal(manifest.display, 'standalone');
+  assert.equal(manifest.start_url, '/');
+  assert.ok(manifest.icons.some((icon) => icon.sizes === '192x192'));
+  assert.ok(manifest.icons.some((icon) => icon.sizes === '512x512' && icon.purpose === 'maskable'));
+
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+  await page.reload();
+  await page.locator('#user-select').waitFor();
+  assert.ok(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)));
+
+  await page.selectOption('#user-select', 'acme-token');
+  await page.locator('.project-button').first().waitFor();
+  const cachedApi = await page.evaluate(async () => {
+    for (const name of await caches.keys()) {
+      const requests = await (await caches.open(name)).keys();
+      if (requests.some((request) => new URL(request.url).pathname.startsWith('/api/'))) return true;
+    }
+    return false;
+  });
+  assert.equal(cachedApi, false);
+
+  await context.setOffline(true);
+  await page.reload();
+  await page.locator('#user-select').waitFor();
+  assert.match(await page.locator('.wordmark').textContent(), /Site Viewer Lite/);
+  await page.selectOption('#user-select', 'acme-token');
+  await page.locator('#projects-status .notice-error').waitFor();
+  assert.ok(await page.locator('#projects-status .notice-error button').isVisible());
+  await context.setOffline(false);
+});
+
 e2e('nothing was thrown or logged as an error along the way', async () => {
   assert.deepEqual(problems, []);
 });

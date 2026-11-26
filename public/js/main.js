@@ -402,6 +402,13 @@ function reportUnexpected() {
   $('cloud-status').replaceChildren(notice('error', t('error.unexpected'), () => window.location.reload()));
 }
 
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 window.addEventListener('error', reportUnexpected);
 window.addEventListener('unhandledrejection', reportUnexpected);
 
@@ -417,3 +424,4 @@ renderLanguageSwitch();
 renderUserOptions();
 startViewer();
 selectUser('');
+registerServiceWorker();
