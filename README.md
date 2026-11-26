@@ -31,7 +31,7 @@ El repositorio incluye un [`render.yaml`](render.yaml) para el plan gratuito de 
 3. Cada push a `main` vuelve a desplegar.
 
 Hay que tener en cuenta tres cosas del plan gratuito:
-- **Se duerme:** el servicio se detiene tras unos 15 minutos sin visitas, y la siguiente visita tarda cerca de un minuto en responder.
+- **Se duerme:** el servicio se detiene tras unos 15 minutos sin visitas, y la siguiente visita tarda cerca de un minuto en responder. El workflow [`keep-awake.yml`](.github/workflows/keep-awake.yml) visita la demo cada 5 minutos para que no se duerma; GitHub puede retrasar las ejecuciones programadas unos minutos. Como el plan gratuito da unas 750 horas al mes para toda la cuenta, conviene apagarlo cuando no haga falta: `gh workflow disable keep-awake.yml`, y para volver a encenderlo, `gh workflow enable keep-awake.yml`.
 - **Disco efímero:** los reportes guardados en `data/issues.jsonl` se pierden cuando el servicio se reinicia o se vuelve a desplegar. Para conservarlos haría falta un disco persistente (de pago) o una base de datos.
 - **Tokens públicos:** los tokens del kit son públicos, así que en la demo cualquiera puede entrar como cualquier usuario y crear reportes. Sirve para mostrar la app; en producción haría falta un inicio de sesión real y un límite de peticiones.
 
