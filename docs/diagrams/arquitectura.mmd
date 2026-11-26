@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph nav["Navegador"]
+    direction LR
+    UI["Interfaz<br/>main.js y ui/"]
+    WK["Web Worker<br/>lee la nube PTS1"]
+    VIS["Escena 3D<br/>three.js"]
+  end
+  subgraph srv["Servidor Node.js y Express"]
+    direction LR
+    AUTH["Token Bearer"]
+    DOM["Dominio<br/>acceso y listas blancas"]
+    DATA[("Datos del kit<br/>JSON y nubes PTS1")]
+    LOG[("Reportes<br/>issues.jsonl")]
+  end
+  UI -->|JSON| AUTH
+  WK -->|binario por partes| AUTH
+  AUTH --> DOM
+  DOM --> DATA
+  DOM --> LOG
+  WK -->|arreglos sin copiar| VIS
+  UI --> VIS

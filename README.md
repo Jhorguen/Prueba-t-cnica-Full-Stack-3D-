@@ -51,8 +51,8 @@ No hace falta base de datos, Docker ni variables de entorno.
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/Jhorguen/Prueba-t-cnica-Full-Stack-3D-.git
-cd Prueba-t-cnica-Full-Stack-3D-
+git clone https://github.com/Jhorguen/prueba-tecnica-site-viewer-lite.git
+cd prueba-tecnica-site-viewer-lite
 ```
 
 ### 2. Instalar y arrancar con un solo comando
@@ -196,50 +196,13 @@ Ninguno lo pide el enunciado. Están probados igual que el resto.
 
 ## Arquitectura
 
-```mermaid
-flowchart LR
-  subgraph nav["Navegador, sin paso de build"]
-    UI["Interfaz<br/>main.js y ui/"]
-    VIS["Escena 3D<br/>three.js"]
-    WK["Web Worker<br/>descarga y lee PTS1"]
-  end
-  subgraph srv["Servidor Node.js y Express"]
-    AUTH["Token Bearer"]
-    DOM["Dominio<br/>acceso y listas blancas"]
-    DATA[("Datos del kit<br/>JSON y nubes PTS1")]
-    LOG[("data/issues.jsonl")]
-  end
-  UI -- "JSON: proyectos, espacios y reportes" --> AUTH
-  WK -- "binario por partes, cancelable" --> AUTH
-  AUTH --> DOM
-  DOM --> DATA
-  DOM --> LOG
-  WK -- "arreglos sin copiar" --> VIS
-  UI --> VIS
-```
+![Arquitectura: el navegador habla con el servidor por JSON y descarga la nube por partes desde un Web Worker](docs/images/arquitectura.png)
 
 Cómo se carga y se cancela la nube:
 
-```mermaid
-sequenceDiagram
-  participant P as Persona
-  participant UI as Interfaz
-  participant W as Web Worker
-  participant API as Servidor
-  P->>UI: Load point cloud
-  UI->>W: crea el worker y pide la nube
-  W->>API: GET /api/projects/:id/cloud con el token
-  loop por cada trozo que llega
-    API-->>W: bytes
-    W->>W: interpreta y guarda los puntos
-    W-->>UI: progreso real en MB y %
-  end
-  W-->>UI: posiciones y colores, sin copiar
-  UI->>UI: dibuja THREE.Points
-  Note over P,UI: Cancel, o abrir otro proyecto
-  UI->>W: terminate()
-  W-xAPI: la descarga se corta
-```
+![Secuencia de carga de la nube con progreso real y cancelación con terminate()](docs/images/carga-de-la-nube.png)
+
+El código de los dos diagramas está en [`docs/diagrams/`](docs/diagrams/), en formato Mermaid.
 
 ## API
 

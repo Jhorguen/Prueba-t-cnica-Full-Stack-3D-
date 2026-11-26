@@ -1,0 +1,18 @@
+sequenceDiagram
+  participant P as Persona
+  participant UI as Interfaz
+  participant W as Web Worker
+  participant API as Servidor
+  P->>UI: Load point cloud
+  UI->>W: crea el worker y pide la nube
+  W->>API: GET /api/projects/:id/cloud con el token
+  loop por cada trozo que llega
+    API-->>W: bytes
+    W->>W: interpreta y guarda los puntos
+    W-->>UI: progreso real en MB y %
+  end
+  W-->>UI: posiciones y colores, sin copiar
+  UI->>UI: dibuja THREE.Points
+  Note over P,UI: Cancel, o abrir otro proyecto
+  UI->>W: terminate()
+  W-xAPI: la descarga se corta
