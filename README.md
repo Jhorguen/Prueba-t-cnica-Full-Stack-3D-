@@ -26,7 +26,7 @@ Para probar en un iPad en la misma red: `http://<ip-del-computador>:3000`.
 npm test
 ```
 
-63 pruebas con `node:test` y `fetch` nativo, sin dependencias extra. Las de la API levantan la app en un puerto libre sobre una copia temporal de los datos. Las del front importan los mismos módulos que usa el navegador, sin DOM.
+70 pruebas con `node:test` y `fetch` nativo, sin dependencias extra. Las de la API levantan la app en un puerto libre sobre una copia temporal de los datos. Las del front importan los mismos módulos que usa el navegador, sin DOM.
 
 | Archivo | Qué cubre |
 |---|---|
@@ -41,6 +41,7 @@ npm test
 | `test/web/api-client.test.js` | Cliente de la API: token actual en cada llamada, errores tipados (`ApiError`, `NetworkError`, abort) aunque el servidor responda HTML |
 | `test/web/format.test.js` | "Not recorded", fechas que no se corren un día en husos al oeste de UTC, m² y ft² |
 | `test/web/messages.test.js` | Mensajes de error y de progreso que ve la persona, y validación previa del formulario |
+| `test/web/i18n.test.js` | Inglés por defecto; los diccionarios en inglés y español tienen las mismas claves y los mismos marcadores; fechas, números y errores en español |
 
 ### Pruebas end-to-end del visor
 
@@ -48,7 +49,7 @@ npm test
 npm run test:e2e
 ```
 
-13 pruebas que abren el visor en Chrome headless, con pantalla táctil y tamaño de iPad. Usan el Chrome instalado en el equipo, no descargan navegadores; con Edge se corren con `E2E_BROWSER_CHANNEL=msedge npm run test:e2e`. Si no encuentran el navegador, se marcan como omitidas.
+16 pruebas que abren el visor en Chrome headless, con pantalla táctil y tamaño de iPad. Usan el Chrome instalado en el equipo, no descargan navegadores; con Edge se corren con `E2E_BROWSER_CHANNEL=msedge npm run test:e2e`. Si no encuentran el navegador, se marcan como omitidas.
 
 Entre el navegador y la app ponen un proxy que entrega la nube lentamente y registra si la conexión se cortó. Así comprueban que Cancel y cambiar de proyecto a mitad de carga cortan la descarga de verdad en el servidor, no solo en la interfaz. También cubren:
 - Selección por toque y alternar m² y ft².
@@ -56,7 +57,8 @@ Entre el navegador y la app ponen un proxy que entrega la nube lentamente y regi
 - Progreso real.
 - Archivo cortado, 404 y red caída con "Try again".
 - Formulario de reporte.
-- Medidas de los controles a 1180×820 y 820×1180.
+- Cambio a español sin perder lo que hay en pantalla, y que se recuerde al recargar.
+- Medidas de los controles a 1180×820 y 820×1180, en inglés y en español.
 - Que no haya excepciones en consola.
 
 ## Probar los casos de error del visor
@@ -106,7 +108,17 @@ Los errores siempre son JSON: `{ "error": { "code", "message", "details?" } }`.
 6. Formulario de reporte con título, nivel y espacio seleccionado. Muestra los errores por campo que devuelve el servidor y el id creado. No usa `alert()` ni `prompt()`.
 7. iPad: verificado por las pruebas end-to-end con emulación táctil a 1180×820 y 820×1180. Todos los controles miden al menos 44 px, no hay scroll horizontal y los campos usan 16 px para que Safari no haga zoom al tocarlos.
 
-**Rendimiento.** La nube de 2 millones de puntos se dibuja completa, sin bajar puntos ni calidad. En local descarga e interpreta en menos de un segundo. Si un archivo trae más de 2 millones de puntos, el lector toma uno de cada N de forma uniforme y el visor lo indica en pantalla.
+**Idiomas.** La página está en inglés, como pide el enunciado, y se puede cambiar a español con el selector EN / ES de la barra superior.
+- La elección se guarda en el navegador. No se detecta el idioma del sistema, para que un navegador en español siga viendo la página en inglés por defecto.
+- Al cambiar de idioma se redibuja todo lo que está en pantalla (ficha, filtro, panel del espacio, avisos y errores) sin perder el proyecto abierto ni la nube cargada.
+- Fechas y números usan el formato regional: "4 de ago de 2026", "322,9 ft²", "2.000.000 puntos".
+- Los datos del kit (nombres de niveles, usos de los espacios, direcciones) se muestran tal como vienen. Solo los estados conocidos del proyecto tienen traducción.
+
+**Rendimiento y reducción de puntos.** En local, la nube de 2 millones de puntos descarga e interpreta en menos de un segundo.
+
+- **Con la cámara quieta** se dibujan los 2 millones de puntos, sin bajar calidad.
+- **Mientras se orbita, desplaza o hace zoom** se dibuja una muestra uniforme de 1 de cada 4 puntos (500 000). Al detenerse la cámara, incluido el frenado suave, vuelve la nube completa. Solo aplica a nubes de 600 000 puntos o más; la de 400 000 siempre se dibuja entera. Medido con Chrome renderizando por software, orbitar fue unas 3 veces más rápido.
+- **Si un archivo trae más de 2 millones de puntos**, el lector toma uno de cada N de forma uniforme y el visor lo indica en pantalla.
 
 ## Decisiones
 
@@ -131,12 +143,31 @@ Los errores siempre son JSON: `{ "error": { "code", "message", "details?" } }`.
 **Visor**
 - La escena solo se dibuja cuando algo cambia (órbita, selección, filtro o tamaño), no 60 veces por segundo. Ahorra batería en iPad.
 - La densidad de píxeles se limita a 2.
+- Para que la muestra al orbitar sea pareja en todo el edificio, el lector guarda los puntos intercalados: primero uno de cada cuatro y después el resto. Así basta con dibujar el primer cuarto del arreglo (`setDrawRange`), sin copiar ni recalcular nada en cada movimiento. Funciona igual si el archivo viene ordenado por barrido del escáner, porque uno de cada cuatro en orden de lectura sigue cubriendo todo el espacio.
 - El sistema de coordenadas con Z hacia arriba se resuelve rotando un grupo raíz, así cajas y puntos usan las coordenadas del archivo tal cual.
 
+**Estilo visual**
+- Toma el lenguaje visual de mantislab.co, con valores medidos en su sitio y no de memoria:
+  - Azul eléctrico `#1800FF` en la acción principal y la selección actual.
+  - Superficies casi negras en la barra superior y el escenario 3D, como el hero de su sitio, donde la nube de puntos es la protagonista.
+  - Títulos en azul marino `#001749`.
+  - Botones con radio de 7 px y borde de 2 px.
+  - Inter Tight en toda la interfaz.
+- El nombre de la app usa Michroma, una fuente ancha y libre, en lugar de Armstrong, la fuente comercial de su marca. No se usa su logo ni su nombre.
+- Todos los colores, fuentes, tamaños y espacios son variables CSS en `:root`. La paleta de niveles y el fondo del escenario también salen de ahí: el visor 3D los lee del CSS, así que un cambio de color se hace en un solo lugar.
+- Se evitan los patrones típicos de interfaces genéricas:
+  - Sin etiquetas en mayúsculas espaciadas encima de los títulos.
+  - Sin textos unidos con "·".
+  - Sin tarjetas dentro de tarjetas: la barra lateral es una sola superficie con divisiones finas.
+  - El azul se reserva para lo que se puede hacer o lo que está seleccionado.
+- Animación de inicio inspirada en el preloader de mantislab.co: el nombre entra desde tres veces su tamaño sobre fondo casi negro y la capa se desvanece. Dura 1,4 s, es solo CSS (`transform` y `opacity`), deja pasar los toques para no bloquear el trabajo y no se muestra si el sistema pide reducir movimiento. Si el JavaScript falla, la animación termina igual y la página queda visible.
+- Accesibilidad: anillo de foco visible en todo lo interactivo, contraste mínimo de 4,5:1 en texto y `overflow-x: clip`. Si el sistema pide reducir movimiento, se quitan las transiciones y la inercia de la cámara. Mientras carga la lista de proyectos se muestra un esqueleto con su forma.
+
 **Front y servidor**
-- No hay paso de build: three.js se instala desde npm y se sirve localmente con un import map. Funciona sin CDN y se puede modificar en vivo.
-- Express 5 y `node:test`. En producción solo se usan Express y three.js; `playwright-core` es dependencia de desarrollo, únicamente para las pruebas del visor.
+- No hay paso de build: three.js se instala desde npm y se sirve localmente con un import map. Las fuentes (`@fontsource/inter-tight` y `@fontsource/michroma`, licencia OFL) también se sirven desde el propio servidor. Funciona sin CDN y se puede modificar en vivo.
+- Express 5 y `node:test`. En producción solo se usan Express, three.js y las dos fuentes; `playwright-core` es dependencia de desarrollo, únicamente para las pruebas del visor.
 - Los reportes se agregan a `data/issues.jsonl`, una línea JSON por reporte (el archivo está en `.gitignore`). Sobreviven a un reinicio sin necesidad de base de datos y, como solo se escribe al final, un fallo no corrompe los reportes anteriores.
+- Los textos viven en dos diccionarios (`public/js/i18n/en.js` y `es.js`), y una prueba falla si a uno le falta una clave o un marcador del otro. Los errores se traducen por su código y no por el texto que manda el servidor. El worker de la nube envía datos (motivo, MB recibidos y esperados, puntos que llegaron) en vez de frases armadas, para que la interfaz escriba el mensaje en el idioma activo. Así la API no cambia y sigue respondiendo en inglés.
 
 ## Qué falta y qué haría con un día más
 
@@ -180,13 +211,16 @@ public/                       visor web, sin paso de build
       loader.js               control del worker desde el hilo principal
       worker.js               descarga y lectura en segundo plano
       pts.js                  lector PTS1 incremental
+    i18n/
+      index.js                idioma activo, traducción y formato regional
+      en.js, es.js            diccionarios
     ui/
       projects.js             lista de proyectos y ficha
       level-filter.js         chips de nivel
       inspector.js            panel del espacio seleccionado y unidad de área
       issue-form.js           formulario de reporte
       cloud-panel.js          botones, progreso y mensajes de la nube
-      messages.js             textos de error que ve la persona
+      messages.js             textos de error que ve la persona, a partir de códigos
       dom.js, format.js       helpers del DOM y formato de fechas y áreas
     package.json              marca los módulos como ES modules para probarlos en Node
 
@@ -214,4 +248,4 @@ Los espacios son cajas: `x, y, z` es la esquina mínima en metros (Z hacia arrib
 
 ## Uso de asistentes de IA
 
-Usé Claude Code (Anthropic) como asistente de programación durante el proyecto: servidor, visor, pruebas y documentación.
+Usé Claude Code (Anthropic) como asistente de programación durante el proyecto: servidor, visor, pruebas y documentación. Para el estilo visual seguí las reglas de la guía de diseño [hallmark](https://github.com/nutlope/hallmark), que lista los patrones que hacen ver una interfaz como generada.
