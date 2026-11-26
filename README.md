@@ -20,13 +20,26 @@ Para probar en un iPad en la misma red: `http://<ip-del-computador>:3000`.
 | Sam Lee | `acme-token` | cliente `acme` |
 | Rita Gomez | `brick-token` | cliente `brick` |
 
+## Desplegar en Render
+
+El repositorio incluye un [`render.yaml`](render.yaml) para el plan gratuito de Render. Se despliega como un solo servicio web, porque Express sirve la página y la API juntas y no hay base de datos.
+
+1. En [render.com](https://render.com): **New → Blueprint** y elegir este repositorio.
+2. Render instala sin dependencias de desarrollo (`npm ci --omit=dev`) y ejecuta `npm start`, que genera las nubes y levanta el servidor en el puerto que Render asigna.
+3. Cada push a `main` vuelve a desplegar.
+
+Hay que tener en cuenta tres cosas del plan gratuito:
+- **Se duerme:** el servicio se detiene tras unos 15 minutos sin visitas, y la siguiente visita tarda cerca de un minuto en responder.
+- **Disco efímero:** los reportes guardados en `data/issues.jsonl` se pierden cuando el servicio se reinicia o se vuelve a desplegar. Para conservarlos haría falta un disco persistente (de pago) o una base de datos.
+- **Tokens públicos:** los tokens del kit son públicos, así que en la demo cualquiera puede entrar como cualquier usuario y crear reportes. Sirve para mostrar la app; en producción haría falta un inicio de sesión real y un límite de peticiones.
+
 ## Pruebas
 
 ```bash
 npm test
 ```
 
-70 pruebas con `node:test` y `fetch` nativo, sin dependencias extra. Las de la API levantan la app en un puerto libre sobre una copia temporal de los datos. Las del front importan los mismos módulos que usa el navegador, sin DOM.
+78 pruebas con `node:test` y `fetch` nativo, sin dependencias extra. Las de la API levantan la app en un puerto libre sobre una copia temporal de los datos. Las del front importan los mismos módulos que usa el navegador, sin DOM.
 
 | Archivo | Qué cubre |
 |---|---|
@@ -37,6 +50,7 @@ npm test
 | `test/api/caching.test.js` | Regla 6: ETag, 304 con `If-None-Match`, `private` y `Vary: Authorization` |
 | `test/api/cloud.test.js` | Regla 7: `Range: bytes=0-15` da 206 con los 16 bytes; proyecto sin nube da 404; rango imposible da 416 |
 | `test/api/issues.test.js` | Los reportes válidos quedan en `data/issues.jsonl` con quién los creó; los rechazados no se guardan |
+| `test/api/admin.test.js` | Panel de reportes: un cliente recibe 403; el staff ve todos con proyecto y espacio, revalida con ETag y cambia el estado; el cambio sobrevive a un reinicio; las entradas malas dan 4xx |
 | `test/web/pts.test.js` | Lector PTS1: trozos de cualquier tamaño, archivo cortado, formato inválido, diezmado |
 | `test/web/api-client.test.js` | Cliente de la API: token actual en cada llamada, errores tipados (`ApiError`, `NetworkError`, abort) aunque el servidor responda HTML |
 | `test/web/format.test.js` | "Not recorded", fechas que no se corren un día en husos al oeste de UTC, m² y ft² |
@@ -49,7 +63,7 @@ npm test
 npm run test:e2e
 ```
 
-16 pruebas que abren el visor en Chrome headless, con pantalla táctil y tamaño de iPad. Usan el Chrome instalado en el equipo, no descargan navegadores; con Edge se corren con `E2E_BROWSER_CHANNEL=msedge npm run test:e2e`. Si no encuentran el navegador, se marcan como omitidas.
+18 pruebas que abren el visor en Chrome headless, con pantalla táctil y tamaño de iPad. Usan el Chrome instalado en el equipo, no descargan navegadores; con Edge se corren con `E2E_BROWSER_CHANNEL=msedge npm run test:e2e`. Si no encuentran el navegador, se marcan como omitidas.
 
 Entre el navegador y la app ponen un proxy que entrega la nube lentamente y registra si la conexión se cortó. Así comprueban que Cancel y cambiar de proyecto a mitad de carga cortan la descarga de verdad en el servidor, no solo en la interfaz. También cubren:
 - Selección por toque y alternar m² y ft².
@@ -57,6 +71,7 @@ Entre el navegador y la app ponen un proxy que entrega la nube lentamente y regi
 - Progreso real.
 - Archivo cortado, 404 y red caída con "Try again".
 - Formulario de reporte.
+- Panel de reportes: un cliente no ve la pestaña; el staff ve llegar un reporte nuevo sin recargar, cambia su estado, filtra y lo abre en 3D.
 - Cambio a español sin perder lo que hay en pantalla, y que se recuerde al recargar.
 - Medidas de los controles a 1180×820 y 820×1180, en inglés y en español.
 - Que no haya excepciones en consola.
@@ -79,6 +94,9 @@ Todas las rutas exigen `Authorization: Bearer <token>`.
 | `GET /api/projects/:id/spaces` | Espacios como cajas |
 | `GET /api/projects/:id/cloud` | Binario PTS1 con soporte de `Range` |
 | `POST /api/projects/:id/issues` | Crea `{ title, level, spaceId? }` y responde 201 con su `id` |
+| `GET /api/me` | Nombre y rol de quien usa el token |
+| `GET /api/issues` | Solo staff: todos los reportes, del más reciente al más antiguo, con nombre de proyecto y espacio. Con ETag |
+| `PATCH /api/issues/:id` | Solo staff: cambia `{ status }` a `open`, `in_progress` o `resolved` |
 
 Los errores siempre son JSON: `{ "error": { "code", "message", "details?" } }`.
 
@@ -93,6 +111,8 @@ Los errores siempre son JSON: `{ "error": { "code", "message", "details?" } }`.
 | Cuerpo mayor a 16 KB | 413 |
 | Proyecto sin nube o archivo no generado | 404 `cloud_not_found` |
 | Rango imposible | 416 |
+| Un cliente pide el panel de reportes | 403 `forbidden` |
+| Reporte inexistente | 404 `issue_not_found` |
 
 ## Qué quedó hecho
 
@@ -107,6 +127,13 @@ Los errores siempre son JSON: `{ "error": { "code", "message", "details?" } }`.
 5. Archivo cortado, 404, red caída y fallo del worker muestran un mensaje claro con "Try again". No hay excepciones en consola; si WebGL no está disponible, la ficha y el formulario siguen funcionando.
 6. Formulario de reporte con título, nivel y espacio seleccionado. Muestra los errores por campo que devuelve el servidor y el id creado. No usa `alert()` ni `prompt()`.
 7. iPad: verificado por las pruebas end-to-end con emulación táctil a 1180×820 y 820×1180. Todos los controles miden al menos 44 px, no hay scroll horizontal y los campos usan 16 px para que Safari no haga zoom al tocarlos.
+
+**Panel de reportes (extra, no lo pide el enunciado).** Con el usuario staff aparece en la barra superior la pestaña **Issues**, con el número de reportes abiertos.
+- Muestra todos los reportes, de todas las cuentas, en una tabla con estado, problema, proyecto y espacio, nivel, quién lo envió y cuándo, con filtro por estado.
+- Se actualiza sola cada 10 segundos mientras está abierta y cada 30 en segundo plano; se detiene con la pestaña del navegador oculta. Como la lista usa ETag, si no hay cambios el servidor responde 304 sin cuerpo. Los reportes que llegan mientras miras se resaltan como nuevos.
+- El estado (abierto, en curso, resuelto) se cambia desde la misma fila, y queda guardado quién lo cambió y cuándo.
+- "Open in 3D" abre el proyecto, selecciona el espacio del reporte y acerca la cámara.
+- El acceso se decide en el servidor: un cliente recibe 403 en `/api/issues` aunque llame a la API directamente, y la interfaz solo muestra la pestaña si `/api/me` dice que el rol es staff. En iPad vertical la tabla se apila en bloques con etiquetas.
 
 **Idiomas.** La página está en inglés, como pide el enunciado, y se puede cambiar a español con el selector EN / ES de la barra superior.
 - La elección se guarda en el navegador. No se detecta el idioma del sistema, para que un navegador en español siga viendo la página en inglés por defecto.
@@ -167,12 +194,12 @@ Los errores siempre son JSON: `{ "error": { "code", "message", "details?" } }`.
 **Front y servidor**
 - No hay paso de build: three.js se instala desde npm y se sirve localmente con un import map. Las fuentes (`@fontsource/inter-tight` y `@fontsource/michroma`, licencia OFL) también se sirven desde el propio servidor. Funciona sin CDN y se puede modificar en vivo.
 - Express 5 y `node:test`. En producción solo se usan Express, three.js y las dos fuentes; `playwright-core` es dependencia de desarrollo, únicamente para las pruebas del visor.
-- Los reportes se agregan a `data/issues.jsonl`, una línea JSON por reporte (el archivo está en `.gitignore`). Sobreviven a un reinicio sin necesidad de base de datos y, como solo se escribe al final, un fallo no corrompe los reportes anteriores.
+- Los reportes se agregan a `data/issues.jsonl`, una línea JSON por reporte (el archivo está en `.gitignore`). Un cambio de estado agrega una versión nueva del reporte en vez de reescribir el archivo, y al arrancar gana la última versión de cada uno. Sobreviven a un reinicio sin base de datos y, como solo se escribe al final, un fallo no corrompe lo anterior. Una línea dañada se salta con un aviso en el log en lugar de impedir el arranque.
 - Los textos viven en dos diccionarios (`public/js/i18n/en.js` y `es.js`), y una prueba falla si a uno le falta una clave o un marcador del otro. Los errores se traducen por su código y no por el texto que manda el servidor. El worker de la nube envía datos (motivo, MB recibidos y esperados, puntos que llegaron) en vez de frases armadas, para que la interfaz escriba el mensaje en el idioma activo. Así la API no cambia y sigue respondiendo en inglés.
 
 ## Qué falta y qué haría con un día más
 
-- **Reportes:** un `GET` para listarlos por proyecto y mostrarlos en el visor, y una base de datos real cuando haya varios servidores.
+- **Reportes:** avisos por correo o webhook cuando llega uno, fotos desde el iPad, que el cliente vea el estado de sus propios reportes, una clave anti-duplicados al reintentar tras una caída de red, y una base de datos real cuando haya varios servidores.
 - **Probar en un iPad real con Safari** y medir FPS con GPU real. Aquí se probó con Chrome y emulación táctil, con renderizado por software.
 - **Nubes grandes** (cientos de MB): formato por bloques tipo octree con nivel de detalle según la cámara, y límite de puntos según el dispositivo.
 - **Content-Security-Policy:** el import map es un script inline y la política necesita su hash. No la activé porque no pude verificar en Safari de iPad que acepte ese hash, y si no lo acepta la página queda en blanco. Es lo primero que haría con un iPad a mano.
@@ -190,9 +217,11 @@ src/                          servidor (API)
   middleware/
     auth.js                   token Bearer → req.user
     errors.js                 errores HTTP en JSON, nunca 500 por entrada inválida
+    json-body.js              exige JSON y limita el tamaño del cuerpo
     http-cache.js             ETag y 304
   routes/
-    projects.js               rutas de la API
+    projects.js               rutas de proyectos, espacios, nube y reportes
+    issues.js                 panel de reportes (solo staff)
   domain/
     access.js                 quién puede ver qué proyecto
     serializers.js            qué campos salen, según el rol
@@ -220,6 +249,7 @@ public/                       visor web, sin paso de build
       level-filter.js         chips de nivel
       inspector.js            panel del espacio seleccionado y unidad de área
       issue-form.js           formulario de reporte
+      admin.js                panel de reportes: tabla, filtro, estados y actualización periódica
       cloud-panel.js          botones, progreso y mensajes de la nube
       messages.js             textos de error que ve la persona, a partir de códigos
       dom.js, format.js       helpers del DOM y formato de fechas y áreas
