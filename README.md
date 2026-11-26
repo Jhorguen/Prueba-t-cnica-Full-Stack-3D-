@@ -160,6 +160,7 @@ Los errores siempre son JSON: `{ "error": { "code", "message", "details?" } }`.
   - Sin textos unidos con "·".
   - Sin tarjetas dentro de tarjetas: la barra lateral es una sola superficie con divisiones finas.
   - El azul se reserva para lo que se puede hacer o lo que está seleccionado.
+- Las listas desplegables tienen flecha, bordes y estados propios en todos los navegadores. En los que soportan `appearance: base-select` (Chrome y Edge recientes), la lista abierta también sigue el estilo de la app: opciones de 44 px y marca en la elegida. Safari en iPad muestra su selector nativo, que ahí es la mejor opción táctil.
 - Animación de inicio inspirada en el preloader de mantislab.co: el nombre entra desde tres veces su tamaño sobre fondo casi negro y la capa se desvanece. Dura 1,4 s, es solo CSS (`transform` y `opacity`), deja pasar los toques para no bloquear el trabajo y no se muestra si el sistema pide reducir movimiento. Si el JavaScript falla, la animación termina igual y la página queda visible.
 - Accesibilidad: anillo de foco visible en todo lo interactivo, contraste mínimo de 4,5:1 en texto y `overflow-x: clip`. Si el sistema pide reducir movimiento, se quitan las transiciones y la inercia de la cámara. Mientras carga la lista de proyectos se muestra un esqueleto con su forma.
 

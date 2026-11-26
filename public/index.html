@@ -35,9 +35,11 @@
         </div>
         <div class="identity">
           <label class="topbar-label" for="user-select" data-i18n="topbar.viewingAs">Viewing as</label>
-          <select id="user-select" class="control control-night">
-            <option value="" data-i18n="topbar.chooseUser">Choose a user…</option>
-          </select>
+          <div class="select">
+            <select id="user-select" class="control control-night">
+              <option value="" data-i18n="topbar.chooseUser">Choose a user…</option>
+            </select>
+          </div>
         </div>
       </div>
     </header>
@@ -70,7 +72,9 @@
             </div>
             <div class="field">
               <label class="label" for="issue-level" data-i18n="issue.level">Level</label>
-              <select id="issue-level" name="level" class="control" aria-describedby="issue-level-error"></select>
+              <div class="select">
+                <select id="issue-level" name="level" class="control" aria-describedby="issue-level-error"></select>
+              </div>
               <span id="issue-level-error" class="field-error"></span>
             </div>
             <div class="field">
