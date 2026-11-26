@@ -264,6 +264,7 @@ function selectUser(token) {
   closeProject();
   state.token = token;
   state.projects = [];
+  appRoot.dataset.needsUser = String(!token);
   renderProjects();
   loadRole(token);
   if (!token) {

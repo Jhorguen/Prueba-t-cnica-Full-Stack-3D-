@@ -1,11 +1,12 @@
 export default {
   'topbar.viewingAs': 'Viewing as',
   'topbar.chooseUser': 'Choose a user…',
+  'topbar.hint': 'Start here: choose who you are',
   'topbar.language': 'Language',
   'role.staff': 'staff',
 
   'projects.title': 'Projects',
-  'projects.chooseUser': 'Choose a user to see their projects.',
+  'projects.chooseUser': 'Choose a user in “Viewing as”, at the top, to see their projects.',
   'projects.loading': 'Loading projects…',
   'projects.empty': 'This user has no projects yet.',
   'projects.loadFailed': 'Could not load the projects.',
@@ -25,7 +26,7 @@ export default {
   'contact.primary': 'Primary contact',
   'contact.other': '{role} contact',
 
-  'stage.chooseUser': 'Choose a user, then a project, to see its spaces in 3D.',
+  'stage.chooseUser': 'Choose a user in “Viewing as”, at the top, then a project to see its spaces in 3D.',
   'stage.chooseProject': 'Choose a project to see its spaces in 3D.',
   'stage.loadingProject': 'Loading project…',
   'stage.noSpaces': 'This project has no spaces recorded yet.',

@@ -1,11 +1,12 @@
 export default {
   'topbar.viewingAs': 'Viendo como',
   'topbar.chooseUser': 'Elige un usuario…',
+  'topbar.hint': 'Empieza aquí: elige quién eres',
   'topbar.language': 'Idioma',
   'role.staff': 'equipo interno',
 
   'projects.title': 'Proyectos',
-  'projects.chooseUser': 'Elige un usuario para ver sus proyectos.',
+  'projects.chooseUser': 'Elige un usuario en “Viendo como”, arriba, para ver sus proyectos.',
   'projects.loading': 'Cargando proyectos…',
   'projects.empty': 'Este usuario aún no tiene proyectos.',
   'projects.loadFailed': 'No se pudieron cargar los proyectos.',
@@ -25,7 +26,7 @@ export default {
   'contact.primary': 'Contacto principal',
   'contact.other': 'Contacto ({role})',
 
-  'stage.chooseUser': 'Elige un usuario y luego un proyecto para ver sus espacios en 3D.',
+  'stage.chooseUser': 'Elige un usuario en “Viendo como”, arriba, y luego un proyecto para ver sus espacios en 3D.',
   'stage.chooseProject': 'Elige un proyecto para ver sus espacios en 3D.',
   'stage.loadingProject': 'Cargando proyecto…',
   'stage.noSpaces': 'Este proyecto aún no tiene espacios registrados.',

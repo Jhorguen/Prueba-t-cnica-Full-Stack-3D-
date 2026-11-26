@@ -6,7 +6,10 @@
   <meta name="color-scheme" content="light">
   <meta name="description" content="Review a scanned building: project details, its spaces in 3D, the point cloud and issue reports.">
   <title>Site Viewer Lite</title>
-  <link rel="icon" href="data:,">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#07080d">
   <link rel="stylesheet" href="/vendor/fonts/inter-tight/latin-400.css">
   <link rel="stylesheet" href="/vendor/fonts/inter-tight/latin-600.css">
   <link rel="stylesheet" href="/vendor/fonts/michroma/latin-400.css">
@@ -23,7 +26,10 @@
 </head>
 <body>
   <div class="intro" aria-hidden="true">
-    <span class="intro-wordmark">Site Viewer Lite</span>
+    <div class="intro-content">
+      <span class="intro-wordmark">Site Viewer Lite</span>
+      <span class="intro-author">Jhorguen Vargas Moreno</span>
+    </div>
   </div>
   <div class="app">
     <header class="topbar">
@@ -42,10 +48,11 @@
         <div class="identity">
           <label class="topbar-label" for="user-select" data-i18n="topbar.viewingAs">Viewing as</label>
           <div class="select">
-            <select id="user-select" class="control control-night">
+            <select id="user-select" class="control control-night" aria-describedby="user-hint">
               <option value="" data-i18n="topbar.chooseUser">Choose a user…</option>
             </select>
           </div>
+          <p id="user-hint" class="user-hint" data-i18n="topbar.hint">Start here: choose who you are</p>
         </div>
       </div>
     </header>
