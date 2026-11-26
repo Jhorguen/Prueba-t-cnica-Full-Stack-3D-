@@ -2,6 +2,8 @@
 
 API en Node.js y visor web con three.js para revisar edificios escaneados: cada persona elige un proyecto, ve sus espacios en 3D, carga la nube de puntos y reporta problemas. Un cliente solo ve sus proyectos y nunca recibe datos internos.
 
+**Demo en línea:** <https://site-viewer-lite.onrender.com>. Está en el plan gratuito de Render: si nadie la ha visitado en un rato, la primera carga tarda cerca de un minuto.
+
 ## Instalar y arrancar
 
 Requiere Node.js 18 o superior.
