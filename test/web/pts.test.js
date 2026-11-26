@@ -15,15 +15,29 @@ function parseInChunks(bytes, chunkSize, options) {
   return parser.finish();
 }
 
+const xs = (cloud) => [...cloud.positions].filter((_, i) => i % 3 === 0);
+
 test('parses positions and colors whatever the chunk size', () => {
   const bytes = toBytes(makeCloud(5));
   for (const size of [1, 3, 7, 16, 17, 64, bytes.length]) {
     const cloud = parseInChunks(bytes, size);
     assert.equal(cloud.count, 5);
     assert.equal(cloud.totalCount, 5);
-    assert.deepEqual([...cloud.positions.subarray(6, 9)], [2, 4, 6]);
-    assert.deepEqual([...cloud.colors.subarray(0, 3)], [10, 20, 30]);
+    const slot = xs(cloud).indexOf(2);
+    assert.deepEqual([...cloud.positions.subarray(slot * 3, slot * 3 + 3)], [2, 4, 6]);
+    assert.deepEqual([...cloud.colors.subarray(slot * 3, slot * 3 + 3)], [10, 20, 30]);
     assert.ok(Math.abs(cloud.spacing - 0.02) < 1e-6);
+  }
+});
+
+test('the first quarter of the output is an even sample of the whole cloud', () => {
+  for (const points of [1, 2, 5, 8, 13, 100]) {
+    const cloud = parseInChunks(toBytes(makeCloud(points)), 48);
+    const order = xs(cloud);
+    assert.deepEqual([...order].sort((a, b) => a - b), Array.from({ length: points }, (_, i) => i), `${points} points`);
+    const preview = order.slice(0, cloud.previewCount);
+    assert.equal(cloud.previewCount, Math.ceil(points / pts.PREVIEW_GROUPS));
+    assert.deepEqual(preview, Array.from({ length: cloud.previewCount }, (_, i) => i * pts.PREVIEW_GROUPS));
   }
 });
 
@@ -31,7 +45,7 @@ test('decimates evenly when the cloud has more points than allowed', () => {
   const cloud = parseInChunks(toBytes(makeCloud(10)), 32, { maxPoints: 4 });
   assert.equal(cloud.stride, 3);
   assert.equal(cloud.count, 4);
-  assert.deepEqual([...cloud.positions].filter((_, i) => i % 3 === 0), [0, 3, 6, 9]);
+  assert.deepEqual(xs(cloud).sort((a, b) => a - b), [0, 3, 6, 9]);
 });
 
 test('a truncated body is reported, not silently accepted', () => {

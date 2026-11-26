@@ -1,12 +1,14 @@
 export const HEADER_BYTES = 16;
 export const RECORD_BYTES = 16;
+export const PREVIEW_GROUPS = 4;
 const MAGIC = 'PTS1';
 
 export class PtsError extends Error {
-  constructor(code, message) {
+  constructor(code, message, params = {}) {
     super(message);
     this.name = 'PtsError';
     this.code = code;
+    this.params = params;
   }
 }
 
@@ -14,11 +16,11 @@ const formatCount = (n) => n.toLocaleString('en-US');
 
 export function parseHeader(bytes) {
   if (bytes.byteLength < HEADER_BYTES) {
-    throw new PtsError('truncated', 'The point cloud file ends before its header is complete.');
+    throw new PtsError('truncated', 'The point cloud file ends before its header is complete.', { reason: 'header' });
   }
   const magic = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
   if (magic !== MAGIC) {
-    throw new PtsError('invalid_format', 'This file is not a PTS1 point cloud.');
+    throw new PtsError('invalid_format', 'This file is not a PTS1 point cloud.', { reason: 'magic' });
   }
   const view = new DataView(bytes.buffer, bytes.byteOffset, HEADER_BYTES);
   const count = view.getUint32(4, true);
@@ -42,6 +44,8 @@ export function createPtsParser({ maxPoints = Infinity } = {}) {
   let recordIndex = 0;
   let kept = 0;
   let received = 0;
+  let groupOffsets = [];
+  let previewCount = 0;
 
   function startBody() {
     header = parseHeader(headerBytes);
@@ -49,14 +53,23 @@ export function createPtsParser({ maxPoints = Infinity } = {}) {
     const capacity = Math.ceil(header.count / stride);
     positions = new Float32Array(capacity * 3);
     colors = new Uint8Array(capacity * 3);
+    const groupSizes = Array.from({ length: PREVIEW_GROUPS }, (_, g) => (
+      g < capacity ? Math.floor((capacity - 1 - g) / PREVIEW_GROUPS) + 1 : 0
+    ));
+    groupOffsets = groupSizes.map((_, g) => groupSizes.slice(0, g).reduce((a, b) => a + b, 0));
+    previewCount = groupSizes[0];
+  }
+
+  function slotFor(index) {
+    return groupOffsets[index % PREVIEW_GROUPS] + Math.floor(index / PREVIEW_GROUPS);
   }
 
   function readRecord(view, offset) {
     if (recordIndex >= header.count) {
-      throw new PtsError('invalid_format', 'The file holds more points than its header announces.');
+      throw new PtsError('invalid_format', 'The file holds more points than its header announces.', { reason: 'extra' });
     }
     if (recordIndex % stride === 0) {
-      const i = kept * 3;
+      const i = slotFor(kept) * 3;
       positions[i] = view.getFloat32(offset, true);
       positions[i + 1] = view.getFloat32(offset + 4, true);
       positions[i + 2] = view.getFloat32(offset + 8, true);
@@ -103,18 +116,20 @@ export function createPtsParser({ maxPoints = Infinity } = {}) {
 
   function finish() {
     if (!header) {
-      throw new PtsError('truncated', 'The point cloud file ends before its header is complete.');
+      throw new PtsError('truncated', 'The point cloud file ends before its header is complete.', { reason: 'header' });
     }
     if (recordIndex < header.count || carryFill > 0) {
       throw new PtsError(
         'truncated',
         `The point cloud file is incomplete: only ${formatCount(recordIndex)} of ${formatCount(header.count)} points arrived.`,
+        { reason: 'points', received: recordIndex, total: header.count },
       );
     }
     return {
       positions,
       colors,
       count: kept,
+      previewCount,
       totalCount: header.count,
       stride,
       spacing: header.spacing,
