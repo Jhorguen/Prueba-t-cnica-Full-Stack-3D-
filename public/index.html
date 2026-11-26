@@ -27,7 +27,13 @@
   </div>
   <div class="app">
     <header class="topbar">
-      <h1 class="wordmark">Site Viewer Lite</h1>
+      <div class="topbar-start">
+        <h1 class="wordmark">Site Viewer Lite</h1>
+        <nav id="view-switch" class="view-switch" aria-label="Views" data-i18n-label="nav.views" hidden>
+          <button type="button" class="view-tab" data-view="viewer" aria-pressed="true"><span data-i18n="nav.viewer">Viewer</span></button>
+          <button type="button" class="view-tab" data-view="issues" aria-pressed="false"><span data-i18n="nav.issues">Issues</span><span id="issues-count" class="count-chip" hidden></span></button>
+        </nav>
+      </div>
       <div class="topbar-controls">
         <div class="language-switch" role="group" aria-label="Language" data-i18n-label="topbar.language">
           <button type="button" class="button language-option" data-language="en" lang="en" aria-label="English" aria-pressed="true">EN</button>
@@ -123,6 +129,18 @@
         </aside>
       </div>
     </main>
+
+    <section id="admin" class="admin" aria-labelledby="admin-title" hidden>
+      <div class="admin-head">
+        <div class="admin-heading">
+          <h2 id="admin-title" class="section-title" data-i18n="admin.title">Issue reports</h2>
+          <p id="admin-meta" class="admin-meta" aria-live="polite"></p>
+        </div>
+        <div id="admin-filter" class="admin-filter" role="group" aria-label="Show status" data-i18n-label="admin.filterLabel"></div>
+      </div>
+      <div id="admin-notice"></div>
+      <div id="admin-body" class="admin-body"></div>
+    </section>
   </div>
 </body>
 </html>

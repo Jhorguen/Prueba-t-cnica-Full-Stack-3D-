@@ -34,6 +34,22 @@ export function formatDate(value) {
   return Number.isNaN(date.getTime()) ? value : dateFormat().format(date);
 }
 
+const dateTimeFormat = () => formatter('datetime', (l) => new Intl.DateTimeFormat(l, {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+}));
+
+const timeFormat = () => formatter('time', (l) => new Intl.DateTimeFormat(l, { timeStyle: 'short' }));
+
+export function formatDateTime(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value ?? '') : dateTimeFormat().format(date);
+}
+
+export function formatTime(date) {
+  return timeFormat().format(date);
+}
+
 export function floorArea(space) {
   return space.w * space.d;
 }

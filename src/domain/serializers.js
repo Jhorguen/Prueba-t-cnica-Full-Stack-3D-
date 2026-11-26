@@ -55,4 +55,25 @@ function toSpace(space) {
   };
 }
 
-module.exports = { toProjectSummary, toProjectDetail, toSpace };
+function toIssue(issue, { projectName, spaceName }) {
+  return {
+    id: issue.id,
+    projectId: issue.projectId,
+    projectName: projectName ?? null,
+    title: issue.title,
+    level: issue.level,
+    spaceId: issue.spaceId ?? null,
+    spaceName: spaceName ?? null,
+    reportedBy: issue.reportedBy ?? null,
+    status: issue.status,
+    createdAt: issue.createdAt,
+    updatedAt: issue.updatedAt ?? issue.createdAt,
+    updatedBy: issue.updatedBy ?? null,
+  };
+}
+
+function toUser(user) {
+  return { name: user.name, role: user.role };
+}
+
+module.exports = { toProjectSummary, toProjectDetail, toSpace, toIssue, toUser };

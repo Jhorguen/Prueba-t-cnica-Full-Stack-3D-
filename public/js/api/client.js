@@ -68,5 +68,12 @@ export function createApi(getToken) {
       signal,
     }),
     cloudUrl: (id) => `/api/projects/${encodeURIComponent(id)}/cloud`,
+    me: (signal) => request('/api/me', { signal }),
+    listIssues: (signal) => request('/api/issues', { signal }),
+    updateIssue: (id, status, signal) => request(`/api/issues/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: { status },
+      signal,
+    }),
   };
 }

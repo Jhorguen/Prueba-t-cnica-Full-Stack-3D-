@@ -28,7 +28,8 @@ test('created issues are appended to the log with who reported them', async () =
 
   const log = readLog();
   assert.equal(log.length, 2);
-  assert.deepEqual(Object.keys(log[0]).sort(), ['createdAt', 'id', 'level', 'projectId', 'reportedBy', 'spaceId', 'title']);
+  assert.deepEqual(Object.keys(log[0]).sort(), ['createdAt', 'id', 'level', 'projectId', 'reportedBy', 'spaceId', 'status', 'title', 'updatedAt']);
+  assert.equal(log[0].status, 'open');
   assert.equal(log[0].id, first.id);
   assert.equal(log[0].reportedBy, 'Sam Lee');
   assert.equal(log[1].id, second.id);

@@ -299,6 +299,49 @@ for (const lang of ['es', 'en']) {
   }
 }
 
+e2e('clients never see the issues panel', async () => {
+  await page.setViewportSize({ width: 1180, height: 820 });
+  await page.selectOption('#user-select', 'acme-token');
+  await page.locator('.project-button').first().waitFor();
+  assert.ok(await page.locator('#view-switch').isHidden());
+  assert.ok(await page.locator('#admin').isHidden());
+});
+
+e2e('staff sees reports arrive, changes their status and opens them in 3D', async () => {
+  await page.selectOption('#user-select', 'staff-token');
+  await page.locator('#view-switch').waitFor();
+  await page.locator('.view-tab[data-view="issues"]').click();
+  await page.locator('.issues-table').waitFor();
+  const before = await page.locator('.issues-table tbody tr').count();
+
+  const created = await fetch(`${proxy.url}/api/projects/1201-30001/issues`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer acme-token', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Stained ceiling', level: 'Level 2', spaceId: 's6' }),
+  });
+  assert.equal(created.status, 201);
+
+  const arrived = page.locator('.issues-table tr.is-new', { hasText: 'Stained ceiling' });
+  await arrived.waitFor({ timeout: 20000 });
+  assert.equal(await page.locator('.issues-table tbody tr').count(), before + 1);
+  assert.match(await arrived.textContent(), /410 Harbor Ave/);
+  assert.match(await arrived.textContent(), /Office 201/);
+  assert.match(await arrived.textContent(), /Sam Lee/);
+
+  const row = () => page.locator('.issues-table tbody tr', { hasText: 'Stained ceiling' });
+  await row().locator('select').selectOption('resolved');
+  await row().locator('.issue-changed', { hasText: 'Changed by Dana Ortiz' }).waitFor();
+  await page.locator('.filter-chip', { hasText: 'Resolved' }).click();
+  assert.deepEqual(await page.locator('.issues-table tbody .issue-title').allTextContents(), ['Stained ceiling']);
+  await page.locator('.filter-chip', { hasText: 'All' }).click();
+
+  await row().locator('.open-in-3d').click();
+  await page.locator('#inspector').waitFor();
+  assert.equal(await page.locator('#project-name').textContent(), '410 Harbor Ave');
+  assert.equal(await page.locator('#inspector-name').textContent(), 'Office 201');
+  assert.equal(await page.locator('.view-tab[data-view="viewer"]').getAttribute('aria-pressed'), 'true');
+});
+
 e2e('nothing was thrown or logged as an error along the way', async () => {
   assert.deepEqual(problems, []);
 });

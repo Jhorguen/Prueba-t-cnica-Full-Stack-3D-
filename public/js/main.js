@@ -2,6 +2,7 @@ import { createApi, isAbort } from './api/client.js';
 import { loadPointCloud } from './cloud/loader.js';
 import { language, onLanguageChange, setLanguage, t, translateStatic } from './i18n/index.js';
 import { SiteViewer } from './scene/viewer.js';
+import { createAdminPanel } from './ui/admin.js';
 import { createCloudPanel } from './ui/cloud-panel.js';
 import { cssToken, el, notice, show, skeletonRows } from './ui/dom.js';
 import { createInspector } from './ui/inspector.js';
@@ -29,6 +30,8 @@ const state = {
   projectId: null,
   project: null,
   levelFilter: null,
+  role: null,
+  view: 'viewer',
 };
 
 const api = createApi(() => state.token);
@@ -38,8 +41,13 @@ let projectController = null;
 let cloudController = null;
 let stageContent = null;
 let projectsStatusContent = null;
+let meController = null;
 
+const appRoot = document.querySelector('.app');
 const userSelect = $('user-select');
+const viewSwitch = $('view-switch');
+const viewTabs = [...document.querySelectorAll('.view-tab')];
+const issuesCount = $('issues-count');
 const languageButtons = [...document.querySelectorAll('.language-option')];
 const projectsStatus = $('projects-status');
 const projectList = $('project-list');
@@ -81,7 +89,11 @@ const issueForm = createIssueForm({
     spaceId: $('issue-space-error'),
   },
 }, {
-  send: (issue) => api.createIssue(state.project.id, issue, projectController.signal),
+  send: async (issue) => {
+    const created = await api.createIssue(state.project.id, issue, projectController.signal);
+    admin.refresh();
+    return created;
+  },
   onClearSpace: () => selectSpace(null),
 });
 
@@ -101,6 +113,62 @@ const cloudPanel = createCloudPanel({
   },
   onToggleVisible: (visible) => viewer && viewer.setPointCloudVisible(visible),
 });
+
+const admin = createAdminPanel({
+  section: $('admin'),
+  meta: $('admin-meta'),
+  filter: $('admin-filter'),
+  notice: $('admin-notice'),
+  body: $('admin-body'),
+}, {
+  api,
+  onOpenInViewer: openIssueInViewer,
+  onOpenCountChange: (count) => {
+    issuesCount.textContent = String(count);
+    show(issuesCount, count > 0);
+  },
+});
+
+function setView(view) {
+  state.view = view === 'issues' && state.role === 'staff' ? 'issues' : 'viewer';
+  appRoot.dataset.view = state.view;
+  for (const tab of viewTabs) tab.setAttribute('aria-pressed', String(tab.dataset.view === state.view));
+  if (state.view === 'issues') admin.show();
+  else admin.hide();
+}
+
+function setRole(role) {
+  state.role = role;
+  const staff = role === 'staff';
+  show(viewSwitch, staff);
+  admin.setEnabled(staff);
+  if (!staff) setView('viewer');
+}
+
+async function loadRole(token) {
+  if (meController) meController.abort();
+  setRole(null);
+  if (!token) return;
+  const controller = new AbortController();
+  meController = controller;
+  try {
+    const me = await api.me(controller.signal);
+    if (!controller.signal.aborted && state.token === token) setRole(me.role);
+  } catch {
+    if (!controller.signal.aborted) setRole(null);
+  }
+}
+
+async function openIssueInViewer(issue) {
+  setView('viewer');
+  if (state.projectId !== issue.projectId || !state.project) await openProject(issue.projectId);
+  if (state.projectId !== issue.projectId || !state.project || !viewer) return;
+  if (state.levelFilter) setLevelFilter(null);
+  if (issue.spaceId) {
+    viewer.select(issue.spaceId);
+    viewer.frameSpace(issue.spaceId);
+  }
+}
 
 function paintStage() {
   const content = stageContent ? stageContent() : null;
@@ -197,6 +265,7 @@ function selectUser(token) {
   state.token = token;
   state.projects = [];
   renderProjects();
+  loadRole(token);
   if (!token) {
     setProjectsStatus(() => el('p', { className: 'muted', text: t('projects.chooseUser') }));
     setStage(() => t('stage.chooseUser'));
@@ -324,6 +393,7 @@ function relabel() {
   inspector.relabel();
   issueForm.relabel();
   cloudPanel.relabel();
+  admin.relabel();
   if (viewer) viewer.canvas.setAttribute('aria-label', t('stage.canvasLabel'));
 }
 
@@ -339,6 +409,7 @@ for (const button of languageButtons) {
 }
 onLanguageChange(relabel);
 userSelect.addEventListener('change', () => selectUser(userSelect.value));
+for (const tab of viewTabs) tab.addEventListener('click', () => setView(tab.dataset.view));
 
 translateStatic(document);
 renderLanguageSwitch();

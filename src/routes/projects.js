@@ -4,6 +4,7 @@ const path = require('path');
 const express = require('express');
 const { canViewProject } = require('../domain/access');
 const { HttpError, projectNotFound } = require('../middleware/errors');
+const { jsonBody } = require('../middleware/json-body');
 const { sendRevalidatableJson, PRIVATE_REVALIDATE } = require('../middleware/http-cache');
 const { toProjectSummary, toProjectDetail, toSpace } = require('../domain/serializers');
 const { isValidProjectId, validateIssue } = require('../domain/validation');
@@ -21,13 +22,6 @@ function projectsRouter(data, issues) {
     const project = data.findProject(id);
     if (!project || !canViewProject(req.user, project)) return next(projectNotFound());
     req.project = project;
-    next();
-  }
-
-  function requireJsonBody(req, res, next) {
-    if (!req.is('application/json')) {
-      return next(new HttpError(415, 'unsupported_media_type', 'Send the request body as application/json.'));
-    }
     next();
   }
 
@@ -67,8 +61,7 @@ function projectsRouter(data, issues) {
   router.post(
     '/:id/issues',
     resolveProject,
-    requireJsonBody,
-    express.json({ limit: '16kb' }),
+    ...jsonBody('16kb'),
     async (req, res, next) => {
       const { value, errors } = validateIssue(req.body, req.project, data.listSpaces(req.project.id));
       if (errors) {
@@ -81,6 +74,7 @@ function projectsRouter(data, issues) {
         title: issue.title,
         level: issue.level,
         spaceId: issue.spaceId,
+        status: issue.status,
         createdAt: issue.createdAt,
       });
     },

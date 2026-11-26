@@ -7,6 +7,8 @@ const { authenticate } = require('./middleware/auth');
 const { HttpError, errorHandler } = require('./middleware/errors');
 const { createIssueStore } = require('./storage/issues');
 const { projectsRouter } = require('./routes/projects');
+const { issuesRouter } = require('./routes/issues');
+const { toUser } = require('./domain/serializers');
 
 const ROOT = path.join(__dirname, '..');
 const THREE_DIR = path.join(path.dirname(require.resolve('three')), '..');
@@ -24,7 +26,7 @@ function securityHeaders(req, res, next) {
 
 function createApp({ dataDir = path.join(ROOT, 'data'), logger = console } = {}) {
   const data = loadData(dataDir);
-  const issues = createIssueStore({ file: path.join(dataDir, 'issues.jsonl') });
+  const issues = createIssueStore({ file: path.join(dataDir, 'issues.jsonl'), logger });
   const app = express();
 
   app.disable('x-powered-by');
@@ -37,7 +39,9 @@ function createApp({ dataDir = path.join(ROOT, 'data'), logger = console } = {})
     next();
   });
   api.use(authenticate(data));
+  api.get('/me', (req, res) => res.json(toUser(req.user)));
   api.use('/projects', projectsRouter(data, issues));
+  api.use('/issues', issuesRouter(data, issues));
   api.use((req, res, next) => next(new HttpError(404, 'route_not_found', 'Endpoint not found.')));
   app.use('/api', api);
 

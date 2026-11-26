@@ -200,6 +200,21 @@ export class SiteViewer {
     this.requestRender();
   }
 
+  frameSpace(spaceId) {
+    const mesh = this.meshes.find((m) => m.userData.space.id === spaceId);
+    if (!mesh) return;
+    this.scene.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(mesh);
+    const center = box.getCenter(new THREE.Vector3());
+    const radius = Math.max(1, box.getBoundingSphere(new THREE.Sphere()).radius);
+    const fov = THREE.MathUtils.degToRad(this.camera.fov);
+    const direction = this.camera.position.clone().sub(this.controls.target).normalize();
+    this.camera.position.copy(center).addScaledVector(direction, (radius / Math.sin(fov / 2)) * 1.8);
+    this.controls.target.copy(center);
+    this.controls.update();
+    this.requestRender();
+  }
+
   setLevelFilter(level) {
     this.levelFilter = level;
     if (level && this.selectedId) {

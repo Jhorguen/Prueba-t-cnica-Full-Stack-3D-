@@ -1,9 +1,12 @@
 'use strict';
 
 const PROJECT_ID = /^\d{4}-\d{5}$/;
+const ISSUE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const TITLE_MAX = 120;
+const ISSUE_STATUSES = ['open', 'in_progress', 'resolved'];
 
 const isValidProjectId = (id) => typeof id === 'string' && PROJECT_ID.test(id);
+const isValidIssueId = (id) => typeof id === 'string' && ISSUE_ID.test(id);
 
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -45,4 +48,21 @@ function validateIssue(body, project, spaces) {
   return { value: { title: cleanTitle, level, spaceId: space ? space.id : null } };
 }
 
-module.exports = { isValidProjectId, validateIssue, TITLE_MAX };
+function validateIssueUpdate(body) {
+  if (!isPlainObject(body)) {
+    return { errors: [{ field: 'body', message: 'Body must be a JSON object.' }] };
+  }
+  if (!ISSUE_STATUSES.includes(body.status)) {
+    return { errors: [{ field: 'status', message: `Status must be one of: ${ISSUE_STATUSES.join(', ')}.` }] };
+  }
+  return { value: { status: body.status } };
+}
+
+module.exports = {
+  isValidProjectId,
+  isValidIssueId,
+  validateIssue,
+  validateIssueUpdate,
+  TITLE_MAX,
+  ISSUE_STATUSES,
+};
