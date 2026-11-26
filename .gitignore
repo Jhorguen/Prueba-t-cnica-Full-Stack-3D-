@@ -6,3 +6,11 @@ data/clouds/
 .claude/
 CLAUDE.md
 data/issues.jsonl
+docs/demo/*
+!docs/demo/gifs/
+docs/demo/gifs/*
+!docs/demo/gifs/pc-04-nube-carga.gif
+!docs/demo/gifs/pc-06-cancelar-carga.gif
+!docs/demo/gifs/pc-07-errores.gif
+!docs/demo/gifs/pc-09-panel-staff.gif
+!docs/demo/gifs/ipad-02-navegacion-3d.gif

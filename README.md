@@ -13,6 +13,7 @@ API en Node.js y visor web con three.js para revisar edificios escaneados. Cada 
 ## Contenido
 
 - [Probar en línea](#probar-en-línea)
+- [Demo en GIF](#demo-en-gif)
 - [Probar en local, paso a paso](#probar-en-local-paso-a-paso)
 - [Recorrido guiado](#recorrido-guiado)
 - [Qué cubre del enunciado](#qué-cubre-del-enunciado)
@@ -37,6 +38,40 @@ No necesita instalar nada. Si la primera carga tarda unos segundos, el servidor 
 | Dana Ortiz | `staff-token` | Staff: los tres proyectos, correo y teléfono de los contactos, y el panel de reportes |
 | Sam Lee | `acme-token` | Cliente Acme Builders: solo *410 Harbor Ave* y *77 Mill St Warehouse* |
 | Rita Gomez | `brick-token` | Cliente Brick & Co: solo *Brickyard Lofts*, que no tiene nube (sirve para ver el 404) |
+
+## Demo en GIF
+
+Lo que más pesa en la evaluación, grabado sobre la demo en línea.
+
+### Nube de 2 millones de puntos con progreso real
+
+La descarga y la lectura ocurren en un Web Worker, con el avance en MB y porcentaje.
+
+![Carga de la nube de 2 millones de puntos con barra de progreso real](docs/demo/gifs/pc-04-nube-carga.gif)
+
+### Cancelar a mitad de carga
+
+**Cancel** corta la descarga, y abrir otro proyecto mientras descarga también la corta, sin que se mezclen puntos del proyecto anterior.
+
+![Cancelar la descarga y cambiar de proyecto a mitad de carga](docs/demo/gifs/pc-06-cancelar-carga.gif)
+
+### Errores honestos
+
+Archivo incompleto, conexión caída y proyecto sin nube: cada uno con un mensaje claro y **Try again**.
+
+![Mensajes de archivo incompleto, sin conexión y 404, con Try again](docs/demo/gifs/pc-07-errores.gif)
+
+### Gestos táctiles en iPad
+
+Orbitar con un dedo, desplazar con dos y acercar pellizcando.
+
+![Orbitar, desplazar y hacer zoom con los dedos en un iPad](docs/demo/gifs/ipad-02-navegacion-3d.gif)
+
+### Panel de reportes (extra)
+
+Un reporte nuevo llega solo, se cambia su estado y **Open in 3D** lleva al espacio del reporte.
+
+![Panel de reportes del staff con un reporte llegando en vivo y cambio de estado](docs/demo/gifs/pc-09-panel-staff.gif)
 
 ## Probar en local, paso a paso
 
