@@ -363,8 +363,8 @@ En cumplimiento de las reglas de la prueba (*"Puedes usar asistentes de código.
 
 - **Herramienta utilizada:** Claude Code (Anthropic).
 - **Usos específicos:**
-  1. Escritura del código del servidor, del visor y de las pruebas automáticas.
-  2. Verificación en navegador, con Chrome sin ventana y emulación de iPad, de la cancelación de la descarga, los errores y las medidas de los controles.
-  3. Estilo visual: aplicación del lenguaje de mantislab.co y de las reglas de la guía de diseño [hallmark](https://github.com/nutlope/hallmark) para evitar patrones de interfaz genéricos.
-  4. Redacción de esta documentación y borradores de las respuestas de la Parte C.
-- **Mi parte:** definí el alcance y los extras (panel de reportes, español, estilo, despliegue), elegí entre las alternativas propuestas, revisé y ajusté una por una las respuestas de la Parte C y probé la aplicación.
+  1. Asistencia en la escritura del código del servidor, del visor 3D y de las pruebas automáticas.
+  2. Verificación en navegador con emulación de iPad: cancelación de la descarga, errores con "Try again" y tamaño de los controles táctiles.
+  3. Asistencia en el estilo visual, a partir del lenguaje de mantislab.co y de las reglas de la guía de diseño [hallmark](https://github.com/nutlope/hallmark).
+  4. Redacción de la documentación (README y ANSWERS.md), que revisé y ajusté.
+- **Mi parte:** definí el alcance y los extras (panel de reportes, español, estilo, despliegue), elegí entre las alternativas propuestas, revisé los resultados y probé la aplicación.
