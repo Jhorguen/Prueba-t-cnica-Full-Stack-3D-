@@ -1,9 +1,11 @@
 export class CloudLoadError extends Error {
-  constructor(code, message, status) {
+  constructor(code, message, { status, serverCode, params } = {}) {
     super(message);
     this.name = 'CloudLoadError';
     this.code = code;
     this.status = status;
+    this.serverCode = serverCode;
+    this.params = params || {};
   }
 }
 
@@ -20,7 +22,7 @@ export function loadPointCloud({ url, token, maxPoints, signal, onProgress }) {
     try {
       worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
     } catch {
-      reject(new CloudLoadError('worker', 'This browser could not start the point cloud reader.'));
+      reject(new CloudLoadError('worker', 'This browser could not start the point cloud reader.', { params: { reason: 'unsupported' } }));
       return;
     }
 
@@ -46,7 +48,7 @@ export function loadPointCloud({ url, token, maxPoints, signal, onProgress }) {
         resolve(data);
       } else if (data.type === 'error') {
         settle();
-        reject(new CloudLoadError(data.code, data.message, data.status));
+        reject(new CloudLoadError(data.code, data.message, data));
       } else if (data.type === 'cancelled') {
         settle();
         reject(abortError());
@@ -57,10 +59,11 @@ export function loadPointCloud({ url, token, maxPoints, signal, onProgress }) {
       event.preventDefault();
       if (settled) return;
       settle();
-      const message = navigator.onLine === false
+      const offline = navigator.onLine === false;
+      const message = offline
         ? 'You appear to be offline. Check your connection.'
         : 'The point cloud reader could not start. Check your connection.';
-      reject(new CloudLoadError('worker', message));
+      reject(new CloudLoadError('worker', message, { params: { reason: offline ? 'offline' : 'start' } }));
     };
     worker.addEventListener('error', onWorkerFailure);
     worker.addEventListener('messageerror', onWorkerFailure);

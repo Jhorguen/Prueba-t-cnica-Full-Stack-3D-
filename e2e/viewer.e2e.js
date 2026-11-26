@@ -249,10 +249,31 @@ e2e('a project without a point cloud shows the 404 with Try again', async () => 
   assert.match(await cloudNotice('error').textContent(), /HTTP 404/);
 });
 
-for (const viewport of [{ width: 1180, height: 820 }, { width: 820, height: 1180 }]) {
-  e2e(`the layout fits an iPad at ${viewport.width}x${viewport.height}`, async () => {
-    await page.setViewportSize(viewport);
-    await page.waitForTimeout(200);
+e2e('switching to Spanish translates what is on screen and is remembered', async () => {
+  await page.locator('.language-option[data-language="es"]').click();
+  assert.equal(await page.locator('html').getAttribute('lang'), 'es');
+  assert.equal(await page.locator('#projects-title').textContent(), 'Proyectos');
+  assert.match(await page.locator('#project-dates').textContent(), /Firmado\s*20 de oct de 2026/);
+  assert.match(await page.locator('#project-dates').textContent(), /Escaneado\s*Sin registro/);
+  assert.match(await cloudNotice('error').textContent(), /Este proyecto no tiene nube de puntos disponible\. \(HTTP 404\)/);
+  assert.ok(await cloudNotice('error').locator('button', { hasText: 'Reintentar' }).isVisible());
+  assert.equal(await page.locator('#issue-submit').textContent(), 'Enviar reporte');
+
+  await page.reload();
+  assert.equal(await page.locator('html').getAttribute('lang'), 'es');
+  assert.equal(await page.locator('#cloud-load').textContent(), 'Cargar nube de puntos');
+  await page.selectOption('#user-select', 'brick-token');
+  await openProject('Brickyard Lofts');
+  await page.locator('#cloud-load').click();
+  await cloudNotice('error').waitFor({ timeout: 10000 });
+});
+
+for (const lang of ['es', 'en']) {
+  for (const viewport of [{ width: 1180, height: 820 }, { width: 820, height: 1180 }]) {
+    e2e(`the layout fits an iPad at ${viewport.width}x${viewport.height} (${lang})`, async () => {
+      await page.locator(`.language-option[data-language="${lang}"]`).click();
+      await page.setViewportSize(viewport);
+      await page.waitForTimeout(200);
     const report = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       small: [...document.querySelectorAll('button, select, input')]
@@ -264,8 +285,9 @@ for (const viewport of [{ width: 1180, height: 820 }, { width: 820, height: 1180
         .filter((node) => parseFloat(getComputedStyle(node).fontSize) < 16)
         .map((node) => node.id),
     }));
-    assert.deepEqual(report, { overflow: 0, small: [], smallFonts: [] });
-  });
+      assert.deepEqual(report, { overflow: 0, small: [], smallFonts: [] });
+    });
+  }
 }
 
 e2e('nothing was thrown or logged as an error along the way', async () => {

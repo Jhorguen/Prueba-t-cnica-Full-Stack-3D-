@@ -12,12 +12,12 @@ function post(type, payload = {}, transfer = []) {
   self.postMessage({ type, ...payload }, transfer);
 }
 
-async function readServerMessage(response) {
+async function readServerError(response) {
   try {
     const body = await response.json();
-    return body?.error?.message || null;
+    return { serverCode: body?.error?.code || null, message: body?.error?.message || null };
   } catch {
-    return null;
+    return { serverCode: null, message: null };
   }
 }
 
@@ -35,12 +35,12 @@ async function load({ url, token, maxPoints }) {
       signal: controller.signal,
     });
     if (!response.ok) {
-      const message = await readServerMessage(response);
-      post('error', { code: 'http', status: response.status, message });
+      const { serverCode, message } = await readServerError(response);
+      post('error', { code: 'http', status: response.status, serverCode, message });
       return;
     }
     if (!response.body) {
-      throw new PtsError('unsupported', 'This browser cannot stream the point cloud download.');
+      throw new PtsError('unsupported', 'This browser cannot stream the point cloud download.', { reason: 'stream' });
     }
 
     const serverLength = declaredLength(response);
@@ -60,6 +60,7 @@ async function load({ url, token, maxPoints }) {
         throw new PtsError(
           'truncated',
           `The point cloud file is incomplete: the server has ${megabytes(serverLength)} but the file announces ${megabytes(header.byteLength)}.`,
+          { reason: 'bytes', serverBytes: serverLength, expectedBytes: header.byteLength },
         );
       }
 
@@ -75,7 +76,7 @@ async function load({ url, token, maxPoints }) {
     post('done', cloud, [cloud.positions.buffer, cloud.colors.buffer]);
   } catch (error) {
     if (error instanceof PtsError) {
-      post('error', { code: error.code, message: error.message });
+      post('error', { code: error.code, message: error.message, params: error.params });
     } else if (controller.signal.aborted) {
       post('cancelled');
     } else if (error instanceof TypeError) {

@@ -17,20 +17,37 @@ before(async () => {
 
 test('API errors are described with their HTTP status', () => {
   const notFound = new client.ApiError(404, 'not_found', 'Project not found.');
-  assert.equal(messages.describeError(notFound, 'fallback'), 'Project not found. (HTTP 404)');
+  assert.equal(messages.describeError(notFound, 'projects.loadFailed'), 'Project not found. (HTTP 404)');
   const unauthorized = new client.ApiError(401, 'unauthorized', 'A valid bearer token is required.');
-  assert.match(messages.describeError(unauthorized, 'fallback'), /Choose the user again/);
-  assert.match(messages.describeError(new client.NetworkError(), 'fallback'), /connection/);
-  assert.equal(messages.describeError(new Error('boom'), 'fallback'), 'fallback');
+  assert.match(messages.describeError(unauthorized, 'projects.loadFailed'), /Choose the user again/);
+  assert.match(messages.describeError(new client.NetworkError(), 'projects.loadFailed'), /connection/);
+  assert.equal(messages.describeError(new Error('boom'), 'projects.loadFailed'), 'Could not load the projects.');
+  const unknownCode = new client.ApiError(418, 'teapot', 'Short and stout.');
+  assert.equal(messages.describeError(unknownCode, 'projects.loadFailed'), 'Short and stout. (HTTP 418)');
 });
 
 test('point cloud errors say what happened', () => {
   assert.equal(
-    messages.describeCloudError({ code: 'http', status: 404, message: 'This project has no point cloud available.' }),
+    messages.describeCloudError({ code: 'http', status: 404, serverCode: 'cloud_not_found' }),
     'This project has no point cloud available. (HTTP 404)',
   );
-  assert.match(messages.describeCloudError({ code: 'truncated', message: 'The point cloud file is incomplete.' }), /incomplete/);
+  assert.equal(
+    messages.describeCloudError({ code: 'truncated', params: { reason: 'bytes', serverBytes: 19200016, expectedBytes: 32000016 } }),
+    'The point cloud file is incomplete: the server has 18.3 MB but the file announces 30.5 MB.',
+  );
+  assert.equal(
+    messages.describeCloudError({ code: 'truncated', params: { reason: 'points', received: 1200000, total: 2000000 } }),
+    'The point cloud file is incomplete: only 1,200,000 of 2,000,000 points arrived.',
+  );
+  assert.match(messages.describeCloudError({ code: 'invalid_format', params: { reason: 'magic' } }), /not a PTS1/);
+  assert.match(messages.describeCloudError({ code: 'worker', params: { reason: 'offline' } }), /offline/);
   assert.equal(messages.describeCloudError(undefined), 'The point cloud could not be loaded.');
+});
+
+test('server field errors are shown per field', () => {
+  assert.equal(messages.describeFieldError({ field: 'title' }, { max: 120 }), 'Enter a title of 1 to 120 characters.');
+  assert.match(messages.describeFieldError({ field: 'spaceId' }), /space/);
+  assert.equal(messages.describeFieldError({ field: 'something-else' }), 'The request could not be read.');
 });
 
 test('the issue form checks the draft before calling the API', () => {

@@ -1,18 +1,17 @@
 import { ApiError, NetworkError, isAbort } from '../api/client.js';
+import { t } from '../i18n/index.js';
 import { el, notice, show } from './dom.js';
 import { characterCount } from './format.js';
-import { describeError } from './messages.js';
+import { describeError, describeFieldError } from './messages.js';
 
 export const TITLE_MAX = 120;
-const NO_SPACE_TEXT = 'None. Tap a room in the 3D view to attach it.';
+const KNOWN_FIELDS = ['title', 'level', 'spaceId'];
 
 export function validateIssueDraft({ title, level }) {
   const errors = [];
   const length = characterCount(title);
-  if (length < 1 || length > TITLE_MAX) {
-    errors.push({ field: 'title', message: `Enter a title of 1 to ${TITLE_MAX} characters.` });
-  }
-  if (!level) errors.push({ field: 'level', message: 'Choose a level.' });
+  if (length < 1 || length > TITLE_MAX) errors.push({ field: 'title' });
+  if (!level) errors.push({ field: 'level' });
   return errors;
 }
 
@@ -21,56 +20,71 @@ export function createIssueForm(elements, { send, onClearSpace }) {
   let space = null;
   let submitting = false;
   let generation = 0;
+  let fieldErrors = [];
+  let result = null;
+
+  function renderSubmit() {
+    elements.submit.disabled = submitting;
+    elements.submit.textContent = t(submitting ? 'issue.sending' : 'issue.submit');
+  }
 
   function setSubmitting(value) {
     submitting = value;
-    elements.submit.disabled = value;
-    elements.submit.textContent = value ? 'Sending…' : 'Submit issue';
+    renderSubmit();
   }
 
   function updateTitleCount() {
     const count = characterCount(elements.title.value.trim());
     elements.titleCount.textContent = `${count}/${TITLE_MAX}`;
-    elements.titleCount.style.color = count > TITLE_MAX ? 'var(--danger)' : '';
+    elements.titleCount.style.color = count > TITLE_MAX ? 'var(--color-danger)' : '';
   }
 
-  function clearErrors() {
+  function renderErrors() {
     for (const node of Object.values(elements.errors)) node.textContent = '';
     for (const control of Object.values(invalidControls)) control.removeAttribute('aria-invalid');
-  }
-
-  function showFieldErrors(errors) {
-    const unplaced = [];
-    for (const { field, message } of errors) {
-      const node = elements.errors[field];
-      if (!node) {
-        unplaced.push(message);
-        continue;
-      }
-      node.textContent = message;
-      if (invalidControls[field]) invalidControls[field].setAttribute('aria-invalid', 'true');
+    for (const error of fieldErrors) {
+      if (!KNOWN_FIELDS.includes(error.field)) continue;
+      elements.errors[error.field].textContent = describeFieldError(error, { max: TITLE_MAX });
+      if (invalidControls[error.field]) invalidControls[error.field].setAttribute('aria-invalid', 'true');
     }
-    return unplaced;
   }
 
-  function syncSpace() {
-    elements.space.textContent = space ? `${space.name} (${space.level})` : NO_SPACE_TEXT;
+  function setFieldErrors(errors) {
+    fieldErrors = errors;
+    renderErrors();
+  }
+
+  function renderResult() {
+    elements.result.replaceChildren(...(result ? [result()] : []));
+  }
+
+  function setResult(render) {
+    result = render;
+    renderResult();
+  }
+
+  function renderSpace() {
+    elements.space.textContent = space ? `${space.name} (${space.level})` : t('issue.noSpace');
+    elements.spaceClear.textContent = t('issue.removeSpace');
     show(elements.spaceClear, Boolean(space));
     elements.level.disabled = Boolean(space);
     if (space) elements.level.value = space.level;
-    elements.errors.spaceId.textContent = '';
+  }
+
+  function renderLevelPlaceholder() {
+    if (elements.level.options[0]) elements.level.options[0].textContent = t('issue.chooseLevel');
   }
 
   async function submit(event) {
     event.preventDefault();
     if (submitting) return;
-    clearErrors();
-    elements.result.replaceChildren();
+    setFieldErrors([]);
+    setResult(null);
 
     const draft = { title: elements.title.value.trim(), level: elements.level.value };
     const localErrors = validateIssueDraft(draft);
     if (localErrors.length > 0) {
-      showFieldErrors(localErrors);
+      setFieldErrors(localErrors);
       return;
     }
 
@@ -79,15 +93,20 @@ export function createIssueForm(elements, { send, onClearSpace }) {
     try {
       const issue = await send({ ...draft, spaceId: space ? space.id : undefined });
       if (current !== generation) return;
-      elements.result.replaceChildren(notice('ok', `Issue reported. ID: ${issue.id}`));
+      setResult(() => notice('ok', t('issue.created', { id: issue.id })));
       elements.title.value = '';
       updateTitleCount();
     } catch (error) {
       if (current !== generation || isAbort(error)) return;
-      const unplaced = error instanceof ApiError ? showFieldErrors(error.details) : [];
-      const message = [describeError(error, 'The issue could not be sent.'), ...unplaced].join(' ');
+      const details = error instanceof ApiError ? error.details : [];
+      setFieldErrors(details);
+      const unplaced = details.filter((detail) => !KNOWN_FIELDS.includes(detail.field));
       const retry = error instanceof NetworkError ? () => elements.submit.click() : null;
-      elements.result.replaceChildren(notice('error', message, retry));
+      setResult(() => notice(
+        'error',
+        [describeError(error, 'issue.sendFailed'), ...unplaced.map((detail) => describeFieldError(detail))].join(' '),
+        retry,
+      ));
     } finally {
       if (current === generation) setSubmitting(false);
     }
@@ -101,16 +120,16 @@ export function createIssueForm(elements, { send, onClearSpace }) {
     open(levels) {
       generation++;
       elements.level.replaceChildren(
-        el('option', { value: '', text: 'Choose a level…' }),
+        el('option', { value: '', text: t('issue.chooseLevel') }),
         ...levels.map((level) => el('option', { value: level, text: level })),
       );
       elements.level.value = levels.length === 1 ? levels[0] : '';
       elements.title.value = '';
       updateTitleCount();
-      clearErrors();
-      elements.result.replaceChildren();
+      setFieldErrors([]);
+      setResult(null);
       setSubmitting(false);
-      syncSpace();
+      renderSpace();
       show(elements.panel, true);
     },
     close() {
@@ -121,10 +140,18 @@ export function createIssueForm(elements, { send, onClearSpace }) {
     },
     setSpace(next) {
       space = next;
-      syncSpace();
+      renderSpace();
+      elements.errors.spaceId.textContent = '';
     },
     suggestLevel(level) {
       if (level && !space) elements.level.value = level;
+    },
+    relabel() {
+      renderSubmit();
+      renderSpace();
+      renderLevelPlaceholder();
+      renderErrors();
+      renderResult();
     },
   };
 }

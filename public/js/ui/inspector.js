@@ -1,5 +1,6 @@
+import { t } from '../i18n/index.js';
 import { show } from './dom.js';
-import { NOT_RECORDED, floorArea, formatArea } from './format.js';
+import { floorArea, formatArea } from './format.js';
 
 export function createInspector(elements, { onClose }) {
   let unit = 'm2';
@@ -9,10 +10,10 @@ export function createInspector(elements, { onClose }) {
     show(elements.panel, Boolean(space));
     if (!space) return;
     elements.name.textContent = space.name;
-    elements.use.textContent = space.use || NOT_RECORDED;
+    elements.use.textContent = space.use || t('date.notRecorded');
     elements.level.textContent = space.level;
     elements.area.textContent = formatArea(floorArea(space), unit);
-    elements.unitToggle.textContent = unit === 'm2' ? 'Show in ft²' : 'Show in m²';
+    elements.unitToggle.textContent = t(unit === 'm2' ? 'inspector.showFeet' : 'inspector.showMetres');
   }
 
   elements.unitToggle.addEventListener('click', () => {
@@ -26,5 +27,6 @@ export function createInspector(elements, { onClose }) {
       space = next;
       render();
     },
+    relabel: render,
   };
 }

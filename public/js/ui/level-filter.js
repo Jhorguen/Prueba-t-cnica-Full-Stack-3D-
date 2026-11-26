@@ -1,8 +1,9 @@
+import { t } from '../i18n/index.js';
 import { el } from './dom.js';
 
 export function renderLevelFilter(container, { levels, active, colorFor, onChange }) {
   const chips = [
-    { level: null, label: 'All levels' },
+    { level: null, label: t('levels.all') },
     ...levels.map((level) => ({ level, label: level, color: colorFor(level) })),
   ];
   container.replaceChildren(...chips.map(({ level, label, color }) => el('button', {

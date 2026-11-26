@@ -1,3 +1,5 @@
+import { t } from '../i18n/index.js';
+
 export function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props)) {
@@ -19,10 +21,21 @@ export function el(tag, props = {}, children = []) {
 export function notice(kind, message, onRetry) {
   return el('div', { className: `notice notice-${kind}`, role: kind === 'error' ? 'alert' : 'status' }, [
     el('p', { text: message }),
-    onRetry ? el('button', { type: 'button', className: 'button', text: 'Try again', onClick: onRetry }) : null,
+    onRetry ? el('button', { type: 'button', className: 'button', text: t('notice.retry'), onClick: onRetry }) : null,
   ]);
 }
 
 export function show(node, visible) {
   node.hidden = !visible;
+}
+
+export function cssToken(name, element = document.documentElement) {
+  return getComputedStyle(element).getPropertyValue(name).trim();
+}
+
+export function skeletonRows(count) {
+  return Array.from({ length: count }, () => el('li', { className: 'skeleton', 'aria-hidden': 'true' }, [
+    el('span', { className: 'skeleton-line' }),
+    el('span', { className: 'skeleton-line' }),
+  ]));
 }

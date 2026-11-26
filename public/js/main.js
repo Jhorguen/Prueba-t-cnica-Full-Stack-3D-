@@ -1,8 +1,9 @@
 import { createApi, isAbort } from './api/client.js';
 import { loadPointCloud } from './cloud/loader.js';
-import { SiteViewer, LEVEL_COLORS } from './scene/viewer.js';
+import { language, onLanguageChange, setLanguage, t, translateStatic } from './i18n/index.js';
+import { SiteViewer } from './scene/viewer.js';
 import { createCloudPanel } from './ui/cloud-panel.js';
-import { el, notice, show } from './ui/dom.js';
+import { cssToken, el, notice, show, skeletonRows } from './ui/dom.js';
 import { createInspector } from './ui/inspector.js';
 import { createIssueForm } from './ui/issue-form.js';
 import { renderLevelFilter } from './ui/level-filter.js';
@@ -10,12 +11,15 @@ import { describeError } from './ui/messages.js';
 import { renderProjectCard, renderProjectList } from './ui/projects.js';
 
 const USERS = [
-  { token: 'staff-token', label: 'Dana Ortiz · Staff' },
-  { token: 'acme-token', label: 'Sam Lee · Acme Builders' },
-  { token: 'brick-token', label: 'Rita Gomez · Brick & Co' },
+  { token: 'staff-token', name: 'Dana Ortiz' },
+  { token: 'acme-token', name: 'Sam Lee', client: 'Acme Builders' },
+  { token: 'brick-token', name: 'Rita Gomez', client: 'Brick & Co' },
 ];
 
 const MAX_POINTS = 2000000;
+const LEVEL_TOKENS = 7;
+const LEVEL_PALETTE = Array.from({ length: LEVEL_TOKENS }, (_, i) => cssToken(`--level-${i + 1}`)).filter(Boolean);
+const STAGE_COLOR = cssToken('--color-stage');
 
 const $ = (id) => document.getElementById(id);
 
@@ -32,8 +36,11 @@ let viewer = null;
 let usersController = null;
 let projectController = null;
 let cloudController = null;
+let stageContent = null;
+let projectsStatusContent = null;
 
 const userSelect = $('user-select');
+const languageButtons = [...document.querySelectorAll('.language-option')];
 const projectsStatus = $('projects-status');
 const projectList = $('project-list');
 const levelFilter = $('level-filter');
@@ -42,10 +49,8 @@ const stageMessage = $('stage-message');
 
 const projectCard = {
   card: $('project-card'),
-  client: $('project-client'),
   name: $('project-name'),
   address: $('project-address'),
-  status: $('project-status'),
   dates: $('project-dates'),
   contacts: $('project-contacts'),
 };
@@ -97,24 +102,42 @@ const cloudPanel = createCloudPanel({
   onToggleVisible: (visible) => viewer && viewer.setPointCloudVisible(visible),
 });
 
-function setStageMessage(content) {
+function paintStage() {
+  const content = stageContent ? stageContent() : null;
   stageMessage.replaceChildren(...(content === null ? [] : [content]));
   show(stageMessage, content !== null);
+}
+
+function setStage(render) {
+  stageContent = render;
+  paintStage();
+}
+
+function paintProjectsStatus() {
+  projectsStatus.replaceChildren(...(projectsStatusContent ? [projectsStatusContent()] : []));
+}
+
+function setProjectsStatus(render) {
+  projectsStatusContent = render;
+  paintProjectsStatus();
 }
 
 function startViewer() {
   try {
     viewer = new SiteViewer(stage, {
+      palette: LEVEL_PALETTE,
+      background: STAGE_COLOR,
       onSelect: handleSpaceSelected,
-      onContextChange: (available) => setStageMessage(available ? null : notice(
+      onContextChange: (available) => setStage(available ? null : () => notice(
         'error',
-        'The browser reset the 3D view to free memory. It should come back on its own.',
+        t('stage.contextLost'),
         () => window.location.reload(),
       )),
     });
+    viewer.canvas.setAttribute('aria-label', t('stage.canvasLabel'));
   } catch {
     viewer = null;
-    setStageMessage(notice('error', 'This device could not start the 3D view (WebGL is not available). Project details and issue reports still work.'));
+    setStage(() => notice('error', t('stage.noWebgl')));
   }
 }
 
@@ -130,7 +153,7 @@ function handleSpaceSelected(space) {
 
 function levelColor(level) {
   const index = Math.max(0, (state.project?.levels || []).indexOf(level));
-  return LEVEL_COLORS[index % LEVEL_COLORS.length];
+  return LEVEL_PALETTE[index % LEVEL_PALETTE.length];
 }
 
 function renderFilter() {
@@ -153,6 +176,21 @@ function renderProjects() {
   renderProjectList(projectList, { projects: state.projects, currentId: state.projectId, onOpen: openProject });
 }
 
+function renderUserOptions() {
+  while (userSelect.options.length > 1) userSelect.remove(1);
+  for (const user of USERS) {
+    const label = `${user.name} (${user.client || t('role.staff')})`;
+    userSelect.append(el('option', { value: user.token, text: label }));
+  }
+  userSelect.value = state.token;
+}
+
+function renderLanguageSwitch() {
+  for (const button of languageButtons) {
+    button.setAttribute('aria-pressed', String(button.dataset.language === language()));
+  }
+}
+
 function selectUser(token) {
   if (usersController) usersController.abort();
   closeProject();
@@ -160,11 +198,11 @@ function selectUser(token) {
   state.projects = [];
   renderProjects();
   if (!token) {
-    projectsStatus.replaceChildren(el('p', { className: 'muted', text: 'Choose a user to see their projects.' }));
-    setStageMessage('Choose a user, then a project, to see its spaces in 3D.');
+    setProjectsStatus(() => el('p', { className: 'muted', text: t('projects.chooseUser') }));
+    setStage(() => t('stage.chooseUser'));
     return;
   }
-  setStageMessage('Choose a project to see its spaces in 3D.');
+  setStage(() => t('stage.chooseProject'));
   loadProjects();
 }
 
@@ -172,19 +210,20 @@ async function loadProjects() {
   if (usersController) usersController.abort();
   const controller = new AbortController();
   usersController = controller;
-  projectsStatus.replaceChildren(el('p', { className: 'muted', text: 'Loading projects…' }));
+  setProjectsStatus(() => el('p', { className: 'visually-hidden', text: t('projects.loading') }));
+  projectList.replaceChildren(...skeletonRows(3));
   try {
     const projects = await api.listProjects(controller.signal);
     if (controller.signal.aborted) return;
     state.projects = Array.isArray(projects) ? projects : [];
-    projectsStatus.replaceChildren();
-    if (state.projects.length === 0) {
-      projectsStatus.append(el('p', { className: 'muted', text: 'This user has no projects yet.' }));
-    }
+    setProjectsStatus(state.projects.length === 0
+      ? () => el('p', { className: 'muted', text: t('projects.empty') })
+      : null);
     renderProjects();
   } catch (error) {
     if (isAbort(error) || controller.signal.aborted) return;
-    projectsStatus.replaceChildren(notice('error', describeError(error, 'Could not load the projects.'), loadProjects));
+    projectList.replaceChildren();
+    setProjectsStatus(() => notice('error', describeError(error, 'projects.loadFailed'), loadProjects));
   }
 }
 
@@ -213,7 +252,7 @@ async function openProject(id) {
   projectController = controller;
   state.projectId = id;
   renderProjects();
-  setStageMessage('Loading project…');
+  setStage(() => t('stage.loadingProject'));
   try {
     const [project, spaces] = await Promise.all([
       api.getProject(id, controller.signal),
@@ -226,12 +265,12 @@ async function openProject(id) {
     issueForm.open(project.levels || []);
     if (viewer) {
       viewer.setSpaces(spaces, project.levels || []);
-      setStageMessage(spaces.length === 0 ? 'This project has no spaces recorded yet.' : null);
+      setStage(spaces.length === 0 ? () => t('stage.noSpaces') : null);
       cloudPanel.setAvailable(true);
     }
   } catch (error) {
     if (isAbort(error) || controller.signal.aborted) return;
-    setStageMessage(notice('error', describeError(error, 'Could not open the project.'), () => openProject(id)));
+    setStage(() => notice('error', describeError(error, 'stage.openFailed'), () => openProject(id)));
   }
 }
 
@@ -271,18 +310,38 @@ async function loadCloud() {
   }
 }
 
+function relabel() {
+  translateStatic(document);
+  renderLanguageSwitch();
+  renderUserOptions();
+  paintProjectsStatus();
+  renderProjects();
+  paintStage();
+  if (state.project) {
+    renderProjectCard(projectCard, state.project);
+    renderFilter();
+  }
+  inspector.relabel();
+  issueForm.relabel();
+  cloudPanel.relabel();
+  if (viewer) viewer.canvas.setAttribute('aria-label', t('stage.canvasLabel'));
+}
+
 function reportUnexpected() {
-  $('cloud-status').replaceChildren(notice(
-    'error',
-    'Something unexpected happened. Reload the page if the view stops responding.',
-    () => window.location.reload(),
-  ));
+  $('cloud-status').replaceChildren(notice('error', t('error.unexpected'), () => window.location.reload()));
 }
 
 window.addEventListener('error', reportUnexpected);
 window.addEventListener('unhandledrejection', reportUnexpected);
 
-for (const user of USERS) userSelect.append(el('option', { value: user.token, text: user.label }));
+for (const button of languageButtons) {
+  button.addEventListener('click', () => setLanguage(button.dataset.language));
+}
+onLanguageChange(relabel);
 userSelect.addEventListener('change', () => selectUser(userSelect.value));
+
+translateStatic(document);
+renderLanguageSwitch();
+renderUserOptions();
 startViewer();
 selectUser('');
